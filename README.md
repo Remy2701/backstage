@@ -7,5 +7,5 @@ An (experimental) framework for creating api with openapi documentation built on
 
 ```toml
 [dependencies]
-backstage = { git = "https://github.com/Remy2701/backstage.git", ref = "v0.1.2" }
+backstage = { git = "https://github.com/Remy2701/backstage.git", ref = "v0.2.0" }
 ```
