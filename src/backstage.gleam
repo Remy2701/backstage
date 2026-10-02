@@ -34,131 +34,50 @@ pub type OpenAPIScope =
 //                                          Route Base                                           //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-pub fn get(route: String) -> Next(EndOfSequence, EndOfSequence) {
-  let single = fn(_) { Ok(EndOfSequence) }
-  backstage_core.Next(
-    doc: fn(doc) {
-      backstage_core.create_scope(
-        doc: doc
-          |> openapi.on_path(route, fn(path) {
-            openapi.path.get(path, function.identity)
-          }),
-        method: http.Get,
-        route: route,
-      )
-    },
-    single: single,
-    fun: fn(request, callback) {
-      use value <- try(single(request))
-      callback(value)
-    },
-  )
+pub fn get(route: String) -> RouteSpecBuilder {
+  backstage_core.RouteSpecBuilder(doc: fn(doc) {
+    backstage_core.create_scope(
+      doc: doc
+        |> openapi.on_path(route, fn(path) {
+          openapi.path.get(path, function.identity)
+        }),
+      method: http.Get,
+      route: route,
+    )
+  })
 }
 
-pub fn post(route: String) -> Next(EndOfSequence, EndOfSequence) {
-  let single = fn(_) { Ok(EndOfSequence) }
-  backstage_core.Next(
-    doc: fn(doc) {
-      backstage_core.create_scope(
-        doc: doc
-          |> openapi.on_path(route, fn(path) {
-            openapi.path.post(path, function.identity)
-          }),
-        method: http.Post,
-        route: route,
-      )
-    },
-    single: single,
-    fun: fn(request, callback) {
-      use value <- try(single(request))
-      callback(value)
-    },
-  )
+pub fn post(route: String) -> RouteSpecBuilder {
+  backstage_core.RouteSpecBuilder(doc: fn(doc) {
+    backstage_core.create_scope(
+      doc: doc
+        |> openapi.on_path(route, fn(path) {
+          openapi.path.post(path, function.identity)
+        }),
+      method: http.Post,
+      route: route,
+    )
+  })
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                        Route Callback                                         //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-pub type Next(data, next) =
-  backstage_core.Next(data, next)
+pub type RouteSpecBuilder =
+  backstage_core.RouteSpecBuilder
 
-pub type SequentialNext(data, next) =
-  backstage_core.SequentialNext(data, next)
+pub type RouteSpec(data) =
+  backstage_core.RouteSpec(data)
+
+pub type RouteCapability(data, object) =
+  backstage_core.RouteCapability(data, object)
 
 /// Get the OpenAPI document from the given route definition
-pub fn doc(
-  next: Next(data, next),
-  openapi: openapi.OpenAPI,
-) -> openapi.OpenAPI {
-  next.doc(openapi)
+pub fn doc(spec: RouteSpec(_), openapi: openapi.OpenAPI) -> openapi.OpenAPI {
+  openapi
+  |> spec.doc()
   |> backstage_core.openapi_scope_doc()
-}
-
-/// The end of a sequence in the routing system
-pub opaque type EndOfSequence {
-  EndOfSequence
-}
-
-/// A sequential element in the routing system
-pub type Sequential(data, next) =
-  backstage_core.Sequential(data, next)
-
-/// Extract the data and next element from a sequential element
-/// 
-/// Usage:
-/// ```gleam
-/// use data, next <- backstage.extract(seq)
-/// ```
-pub fn extract(seq: Sequential(data, next), fun: fn(data, next) -> a) -> a {
-  fun(seq.data, seq.next)
-}
-
-/// Extract the first element of a sequence
-pub fn extract1(seq: Sequential(data, _)) -> data {
-  seq.data
-}
-
-/// Extract the second element of a sequence
-pub fn extract2(seq: Sequential(_, Sequential(data, _))) -> data {
-  seq.next.data
-}
-
-/// Extract the third element of a sequence
-pub fn extract3(
-  seq: Sequential(_, Sequential(_, Sequential(data, _))),
-) -> data {
-  seq.next.next.data
-}
-
-/// Extract the fourth element of a sequence
-pub fn extract4(
-  seq: Sequential(_, Sequential(_, Sequential(_, Sequential(data, _)))),
-) -> data {
-  seq.next.next.next.data
-}
-
-/// Extract the fifth element of a sequence
-pub fn extract5(
-  seq: Sequential(
-    _,
-    Sequential(_, Sequential(_, Sequential(_, Sequential(data, _)))),
-  ),
-) -> data {
-  seq.next.next.next.next.data
-}
-
-/// Extract the sixth element of a sequence
-pub fn extract6(
-  seq: Sequential(
-    _,
-    Sequential(
-      _,
-      Sequential(_, Sequential(_, Sequential(_, Sequential(data, _)))),
-    ),
-  ),
-) -> data {
-  seq.next.next.next.next.next.data
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -183,15 +102,16 @@ pub fn require_authorization(
 
 /// Add bearer authentication to the route.
 pub fn bearer_auth(
-  next: Next(_, next),
+  spec: RouteSpecBuilder,
   name: String,
-) -> SequentialNext(BearerAuth, next) {
-  let unauthorized = unauthorized(next)
-  backstage_core.sequential(
-    next: next,
-    doc: fn(doc) {
+  next: fn(RouteSpecBuilder, RouteCapability(BearerAuth, object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  use spec, unauthorized <- unauthorized(spec)
+  next(
+    backstage_core.RouteSpecBuilder(doc: fn(doc) {
       doc
-      |> unauthorized.doc()
+      |> spec.doc()
       |> backstage_core.modify_operation(fn(operation) {
         operation
         |> openapi.operation.security(name)
@@ -203,13 +123,12 @@ pub fn bearer_auth(
           |> openapi.security_scheme.bearer_format("JWT")
         })
       })
-    },
-    single: fn(request) {
-      use unauthorized <- result.try(unauthorized.single(request))
+    }),
+    backstage_core.RouteCapability(get: fn(request, next) {
+      use unauthorized <- unauthorized.get(request)
       use token <- result.try(require_authorization(request, unauthorized))
-
-      Ok(BearerAuth(token: token))
-    },
+      next(BearerAuth(token: token))
+    }),
   )
 }
 
@@ -224,14 +143,15 @@ pub type Body(body) {
 
 /// Add a json body with the given decoder to the route
 pub fn json_body(
-  next: Next(_, next),
+  spec: RouteSpecBuilder,
   decoder: decode.Decoder(body),
-) -> SequentialNext(Body(body), next) {
-  backstage_core.sequential(
-    next: next,
-    doc: fn(doc) {
+  next: fn(RouteSpecBuilder, RouteCapability(Body(body), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  next(
+    backstage_core.RouteSpecBuilder(doc: fn(doc) {
       doc
-      |> next.doc()
+      |> spec.doc()
       |> backstage_core.modify_operation(fn(operation) {
         operation
         |> openapi.operation.request_body(fn(request_body) {
@@ -244,15 +164,15 @@ pub fn json_body(
           })
         })
       })
-    },
-    single: fn(request) {
+    }),
+    backstage_core.RouteCapability(get: fn(request, next) {
       use body <- result.try(backstage_core.get_json_body(
         request,
         decoder.decoder,
       ))
 
-      Ok(Body(value: body))
-    },
+      next(Body(value: body))
+    }),
   )
 }
 
@@ -266,17 +186,20 @@ pub type JsonResponse(response) {
 }
 
 pub fn json_response(
-  next: Next(_, next),
+  spec: RouteSpecBuilder,
   code: Int,
   summary: String,
   encoder: encode.Encoder(response),
-) -> SequentialNext(JsonResponse(response), next) {
+  next: fn(RouteSpecBuilder, RouteCapability(JsonResponse(response), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     code,
     encoder,
     summary,
     JsonResponse,
+    next,
   )
 }
 
@@ -285,14 +208,17 @@ pub type BadRequestResponse {
 }
 
 pub fn bad_request(
-  next: Next(_, next),
-) -> SequentialNext(BadRequestResponse, next) {
+  spec: RouteSpecBuilder,
+  next: fn(RouteSpecBuilder, RouteCapability(BadRequestResponse, object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     backstage_core.status_code.bad_request,
     backstage_core.error_response_encoder("bad_request"),
     "Bad request",
     BadRequestResponse,
+    next,
   )
 }
 
@@ -301,14 +227,17 @@ pub type UnauthorizedResponse {
 }
 
 pub fn unauthorized(
-  next: Next(_, next),
-) -> SequentialNext(UnauthorizedResponse, next) {
+  spec: RouteSpecBuilder,
+  next: fn(RouteSpecBuilder, RouteCapability(UnauthorizedResponse, object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     backstage_core.status_code.unauthorized,
     backstage_core.error_response_encoder("unauthorized"),
     "Unauthorized",
     UnauthorizedResponse,
+    next,
   )
 }
 
@@ -317,14 +246,17 @@ pub type NotFoundResponse {
 }
 
 pub fn not_found(
-  next: Next(_, next),
-) -> SequentialNext(NotFoundResponse, next) {
+  spec: RouteSpecBuilder,
+  next: fn(RouteSpecBuilder, RouteCapability(NotFoundResponse, object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     backstage_core.status_code.not_found,
     backstage_core.error_response_encoder("not_found"),
     "Not found",
     NotFoundResponse,
+    next,
   )
 }
 
@@ -332,13 +264,18 @@ pub type ConflictResponse {
   ConflictResponse(apply: fn(String) -> WispResponse)
 }
 
-pub fn conflict(next: Next(_, next)) -> SequentialNext(ConflictResponse, next) {
+pub fn conflict(
+  spec: RouteSpecBuilder,
+  next: fn(RouteSpecBuilder, RouteCapability(ConflictResponse, object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     backstage_core.status_code.conflict,
     backstage_core.error_response_encoder("conflict"),
     "Conflict",
     ConflictResponse,
+    next,
   )
 }
 
@@ -347,14 +284,19 @@ pub type InternalServerErrorResponse {
 }
 
 pub fn internal_server_error(
-  next: Next(_, next),
-) -> SequentialNext(InternalServerErrorResponse, next) {
+  spec: RouteSpecBuilder,
+  next: fn(
+    RouteSpecBuilder,
+    RouteCapability(InternalServerErrorResponse, object),
+  ) -> RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     backstage_core.status_code.internal_server_error,
     backstage_core.error_response_encoder("internal_server_error"),
     "Internal server error",
     InternalServerErrorResponse,
+    next,
   )
 }
 
@@ -363,14 +305,19 @@ pub type ServiceUnavailableResponse {
 }
 
 pub fn service_unavailable(
-  next: Next(_, next),
-) -> SequentialNext(ServiceUnavailableResponse, next) {
+  spec: RouteSpecBuilder,
+  next: fn(
+    RouteSpecBuilder,
+    RouteCapability(ServiceUnavailableResponse, object),
+  ) -> RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     backstage_core.status_code.service_unavailable,
     backstage_core.error_response_encoder("service_unavailable"),
     "Service unavailable",
     ServiceUnavailableResponse,
+    next,
   )
 }
 
@@ -378,13 +325,18 @@ pub type TimeoutResponse {
   TimeoutResponse(apply: fn(String) -> WispResponse)
 }
 
-pub fn timeout(next: Next(_, next)) -> SequentialNext(TimeoutResponse, next) {
+pub fn timeout(
+  spec: RouteSpecBuilder,
+  next: fn(RouteSpecBuilder, RouteCapability(TimeoutResponse, object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
   backstage_core.json_response_internal(
-    next,
+    spec,
     backstage_core.status_code.timeout,
     backstage_core.error_response_encoder("timeout"),
     "Timeout",
     TimeoutResponse,
+    next,
   )
 }
 
@@ -392,11 +344,20 @@ pub fn timeout(next: Next(_, next)) -> SequentialNext(TimeoutResponse, next) {
 //                                            Runtime                                            //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
+pub fn build(
+  spec: RouteSpecBuilder,
+  next: fn(Request) -> Result(object, WispResponse),
+) -> RouteSpec(object) {
+  backstage_core.RouteSpec(doc: spec.doc, build: next)
+}
+
 /// Run the route definition with the given body and for the given request.
 pub fn run(
-  def: Next(data, next),
+  spec: RouteSpec(object),
   request: Request,
-  next: fn(next) -> WispResponse,
+  next: fn(object) -> WispResponse,
 ) {
-  def.fun(request, next)
+  use object <- try(spec.build(request))
+
+  next(object)
 }

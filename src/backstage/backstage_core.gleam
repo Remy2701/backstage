@@ -35,7 +35,7 @@ pub fn create_scope(
 
 pub fn modify_doc(
   scope: OpenAPIScope,
-  fun: fn(openapi.OpenAPI) -> openapi.OpenAPI,
+  fun: fn(OpenAPI) -> OpenAPI,
 ) -> OpenAPIScope {
   OpenAPIScope(..scope, doc: fun(scope.doc))
 }
@@ -69,46 +69,25 @@ pub fn openapi_scope_doc(scope: OpenAPIScope) {
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
-//                                        Route Callback                                         //
+//                                          Route Spec                                           //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-pub type Next(data, next) {
-  Next(
+pub type RouteSpecBuilder {
+  RouteSpecBuilder(doc: fn(OpenAPI) -> OpenAPIScope)
+}
+
+pub type RouteSpec(data) {
+  RouteSpec(
     doc: fn(OpenAPI) -> OpenAPIScope,
-    single: fn(Request) -> Result(data, WispResponse),
-    fun: fn(Request, fn(next) -> WispResponse) -> WispResponse,
+    build: fn(Request) -> Result(data, WispResponse),
   )
 }
 
-pub type Sequential(data, next) {
-  Sequential(data: data, next: next)
-}
-
-pub type SequentialNext(data, next) =
-  Next(data, Sequential(data, next))
-
-pub fn sequential(
-  next next: Next(_, next),
-  doc doc: fn(OpenAPI) -> OpenAPIScope,
-  single single: fn(Request) -> Result(data, WispResponse),
-) -> SequentialNext(data, next) {
-  Next(doc: doc, single: single, fun: fn(request, callback) {
-    use body <- try(single(request))
-    use next <- next.fun(request)
-
-    callback(Sequential(data: body, next: next))
-  })
-}
-
-pub fn map_sequence(
-  next next: Next(a, next),
-  mapper mapper: fn(next) -> next2,
-) -> Next(a, next2) {
-  Next(..next, fun: fn(request, callback) {
-    use next <- next.fun(request)
-
-    callback(mapper(next))
-  })
+pub type RouteCapability(data, object) {
+  RouteCapability(
+    get: fn(Request, fn(data) -> Result(object, WispResponse)) ->
+      Result(object, WispResponse),
+  )
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -117,17 +96,17 @@ pub fn map_sequence(
 
 /// Add a JSON response with the given encoder to the route
 pub fn json_response_internal(
-  next: Next(_, next),
+  spec: RouteSpecBuilder,
   code: Int,
   encoder: encode.Encoder(response),
   summary: String,
   response: fn(fn(response) -> WispResponse) -> data,
-) -> SequentialNext(data, next) {
-  sequential(
-    next: next,
-    doc: fn(doc) {
+  next: fn(RouteSpecBuilder, RouteCapability(data, object)) -> RouteSpec(object),
+) -> RouteSpec(object) {
+  next(
+    RouteSpecBuilder(doc: fn(doc) {
       doc
-      |> next.doc()
+      |> spec.doc()
       |> modify_operation(fn(operation) {
         operation
         |> openapi.operation.response(code, fn(response) {
@@ -141,15 +120,15 @@ pub fn json_response_internal(
           })
         })
       })
-    },
-    single: fn(_) {
-      Ok(
+    }),
+    RouteCapability(get: fn(_, next) {
+      next(
         response(fn(response) {
           wisp.response(code)
           |> json_body(encode.encode_json(response, encoder))
         }),
       )
-    },
+    }),
   )
 }
 
