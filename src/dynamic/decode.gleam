@@ -182,3 +182,87 @@ pub fn field(
 pub fn build(object: ObjectDecoder(a), builder: fn(a) -> b) -> Decoder(b) {
   Decoder(decoder: decode.map(object.builder(), builder), doc: object.doc)
 }
+
+/// Extract a single value from the result of the ObjectDecoder. This function 
+/// is only here for consistency
+pub fn extract1(data: a) -> a {
+  data
+}
+
+/// Extract a 2 value from the result of the ObjectDecoder. This function 
+/// is only here for consistency
+pub fn extract2(data: #(a, b)) -> #(a, b) {
+  data
+}
+
+/// Extract a 3 value from the result of the ObjectDecoder. 
+pub fn extract3(data: #(#(a, b), c)) -> #(a, b, c) {
+  let #(#(a, b), c) = data
+  #(a, b, c)
+}
+
+/// Extract a 4 value from the result of the ObjectDecoder. 
+pub fn extract4(data: #(#(#(a, b), c), d)) -> #(a, b, c, d) {
+  let #(#(#(a, b), c), d) = data
+  #(a, b, c, d)
+}
+
+/// Extract a 5 value from the result of the ObjectDecoder. 
+pub fn extract5(data: #(#(#(#(a, b), c), d), e)) -> #(a, b, c, d, e) {
+  let #(#(#(#(a, b), c), d), e) = data
+  #(a, b, c, d, e)
+}
+
+/// Extract a 6 value from the result of the ObjectDecoder. 
+pub fn extract6(data: #(#(#(#(#(a, b), c), d), e), f)) -> #(a, b, c, d, e, f) {
+  let #(#(#(#(#(a, b), c), d), e), f) = data
+  #(a, b, c, d, e, f)
+}
+
+/// Extract a 7 value from the result of the ObjectDecoder. 
+pub fn extract7(
+  data: #(#(#(#(#(#(a, b), c), d), e), f), g),
+) -> #(a, b, c, d, e, f, g) {
+  let #(#(#(#(#(#(a, b), c), d), e), f), g) = data
+  #(a, b, c, d, e, f, g)
+}
+
+/// Extract a 8 value from the result of the ObjectDecoder. 
+pub fn extract8(
+  data: #(#(#(#(#(#(#(a, b), c), d), e), f), g), h),
+) -> #(a, b, c, d, e, f, g, h) {
+  let #(#(#(#(#(#(#(a, b), c), d), e), f), g), h) = data
+  #(a, b, c, d, e, f, g, h)
+}
+
+/// Extract a 9 value from the result of the ObjectDecoder. 
+pub fn extract9(
+  data: #(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i),
+) -> #(a, b, c, d, e, f, g, h, i) {
+  let #(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i) = data
+  #(a, b, c, d, e, f, g, h, i)
+}
+
+/// Extract a 10 value from the result of the ObjectDecoder. 
+pub fn extract10(
+  data: #(#(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i), j),
+) -> #(a, b, c, d, e, f, g, h, i, j) {
+  let #(#(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i), j) = data
+  #(a, b, c, d, e, f, g, h, i, j)
+}
+
+/// Extract a 11 value from the result of the ObjectDecoder. 
+pub fn extract11(
+  data: #(#(#(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i), j), k),
+) -> #(a, b, c, d, e, f, g, h, i, j, k) {
+  let #(#(#(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i), j), k) = data
+  #(a, b, c, d, e, f, g, h, i, j, k)
+}
+
+/// Extract a 12 value from the result of the ObjectDecoder. 
+pub fn extract12(
+  data: #(#(#(#(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i), j), k), l),
+) -> #(a, b, c, d, e, f, g, h, i, j, k, l) {
+  let #(#(#(#(#(#(#(#(#(#(#(a, b), c), d), e), f), g), h), i), j), k), l) = data
+  #(a, b, c, d, e, f, g, h, i, j, k, l)
+}
