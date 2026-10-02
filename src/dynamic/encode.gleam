@@ -21,6 +21,11 @@ pub fn with_default(encoder: Encoder(a), default: Spec) -> Encoder(a) {
   })
 }
 
+/// An encoder for the `Nil` type.
+pub fn nil() -> Encoder(Nil) {
+  Encoder(encoder: fn(_) { spec.null() }, doc: fn() { openapi_type.Null })
+}
+
 /// An encoder for a string.
 pub fn string() -> Encoder(String) {
   Encoder(spec.string, openapi_type.string)
