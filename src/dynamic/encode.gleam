@@ -1,10 +1,12 @@
 import dynamic/spec.{type Spec}
+import gleam/dict
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/pair
 import gleam/time/calendar
 import gleam/time/timestamp
+import json_value.{type JsonValue}
 import openapi/openapi_type.{type OpenAPIType}
 import taffy/value.{type YamlValue as Yaml}
 
@@ -80,6 +82,26 @@ pub fn timestamp() -> Encoder(timestamp.Timestamp) {
     },
     fn() { openapi_type.string() |> openapi_type.format("date-time") },
   )
+}
+
+fn json_value_to_spec(value: JsonValue) -> Spec {
+  case value {
+    json_value.Null -> spec.Null
+    json_value.String(value) -> spec.string(value)
+    json_value.Int(value) -> spec.integer(value)
+    json_value.Bool(value) -> spec.boolean(value)
+    json_value.Float(value) -> spec.float(value)
+    json_value.Array(values) -> spec.array_of(values, json_value_to_spec)
+    json_value.Object(values) ->
+      spec.object(
+        dict.to_list(values) |> list.map(pair.map_second(_, json_value_to_spec)),
+      )
+  }
+}
+
+/// An encoder for a json_value.
+pub fn json_value() -> Encoder(JsonValue) {
+  Encoder(json_value_to_spec, fn() { openapi_type.object([]) })
 }
 
 /// The encoder type for a field within an object.
