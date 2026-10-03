@@ -253,6 +253,10 @@ pub fn object(next: fn(Context(t)) -> Object(t)) -> Serializer(t) {
   )
 }
 
+pub fn empty_object() -> Serializer(Nil) {
+  object(build(_, fn() { decode.success(Nil) }))
+}
+
 pub fn field(
   context: Context(final),
   name: String,
