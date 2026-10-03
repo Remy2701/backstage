@@ -4,8 +4,12 @@ import dynamic/decode
 import dynamic/encode
 import dynamic/serialize
 import dynamic/spec
+import gleam/dynamic
 import gleam/function
 import gleam/http
+import gleam/http/request
+import gleam/json
+import gleam/list
 import gleam/option
 import gleam/result
 import openapi/openapi
@@ -400,6 +404,95 @@ pub fn timeout(
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                        Query Parameter                                        //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type QueryParameter(a) {
+  QueryParameter(value: a)
+}
+
+fn query_parameter_internal(
+  spec: RouteSpecBuilder,
+  name: String,
+  serializer: serialize.Serializer(a),
+  default: option.Option(a),
+  is_json: Bool,
+  next: fn(RouteSpecBuilder, RouteCapability(QueryParameter(a), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  use spec, bad_request <- bad_request(spec)
+
+  spec
+  |> backstage_core.modify_spec(fn(scope) {
+    scope
+    |> backstage_core.modify_operation(fn(operation) {
+      operation
+      |> openapi.operation.parameter(
+        name,
+        openapi.ParameterInQuery,
+        fn(parameter) {
+          parameter
+          |> openapi.parameter.required(option.is_none(default))
+          |> openapi.parameter.schema("", fn(_) {
+            serializer.doc() |> openapi_type.to_schema()
+          })
+        },
+      )
+    })
+  })
+  |> next(
+    backstage_core.RouteCapability(fn(request, next) {
+      use bad_request <- bad_request.get(request)
+
+      use data <- result.try(
+        request.get_query(request)
+        |> result.unwrap([])
+        |> list.key_find(name)
+        |> result.map(fn(value) {
+          case is_json {
+            True ->
+              json.parse(value, serializer.decoder)
+              |> result.map_error(fn(_) {
+                bad_request.apply("Failed to decode '" <> name <> "'")
+              })
+            False ->
+              serialize.decode(dynamic.string(value), serializer)
+              |> result.map_error(fn(_) {
+                bad_request.apply("Failed to decode '" <> name <> "'")
+              })
+          }
+        })
+        |> result.unwrap(case default {
+          option.Some(default) -> Ok(default)
+          option.None ->
+            Error(bad_request.apply("Missing query parameter '" <> name <> "'"))
+        }),
+      )
+
+      next(QueryParameter(data))
+    }),
+  )
+}
+
+pub fn query_parameter(
+  spec: RouteSpecBuilder,
+  name: String,
+  serializer: serialize.Serializer(a),
+  default: option.Option(a),
+  next: fn(RouteSpecBuilder, RouteCapability(QueryParameter(a), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  query_parameter_internal(spec, name, serializer, default, False, next)
+}
+
+pub fn json_query_parameter(
+  spec: RouteSpecBuilder,
+  name: String,
+  serializer: serialize.Serializer(a),
+  default: option.Option(a),
+  next: fn(RouteSpecBuilder, RouteCapability(QueryParameter(a), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  query_parameter_internal(spec, name, serializer, default, True, next)
+}
 
 pub fn pagination(
   spec: RouteSpecBuilder,
