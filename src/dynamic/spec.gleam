@@ -1,3 +1,4 @@
+import gleam/dynamic
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -125,5 +126,23 @@ pub fn to_yaml(spec: Spec) -> Yaml {
     Array(values:) -> yaml.Sequence(list.map(values, to_yaml))
     Object(properties:) ->
       yaml.Mapping(list.map(properties, pair.map_second(_, to_yaml)))
+  }
+}
+
+/// Converts a `Spec` to a dynamic value.
+pub fn to_dynamic(spec: Spec) -> dynamic.Dynamic {
+  case spec {
+    String(value:) -> dynamic.string(value)
+    Integer(value:) -> dynamic.int(value)
+    Float(value:) -> dynamic.float(value)
+    Boolean(value:) -> dynamic.bool(value)
+    Null -> dynamic.nil()
+    Array(values:) -> dynamic.list(list.map(values, to_dynamic))
+    Object(properties:) ->
+      dynamic.properties(
+        properties
+        |> list.map(pair.map_second(_, to_dynamic))
+        |> list.map(pair.map_first(_, dynamic.string)),
+      )
   }
 }

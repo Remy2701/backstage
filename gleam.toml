@@ -10,6 +10,7 @@ taffy = ">= 1.1.2 and < 2.0.0"
 gleam_time = ">= 1.11.0 and < 2.0.0"
 gleam_http = ">= 4.4.0 and < 5.0.0"
 json_value = ">= 1.2.0 and < 2.0.0"
+garanti = ">= 0.1.1 and < 1.0.0"
 
 [dev_dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"

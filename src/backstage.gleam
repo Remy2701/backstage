@@ -1,6 +1,9 @@
 import backstage/backstage_core
+import backstage/pagination
 import dynamic/decode
 import dynamic/encode
+import dynamic/serialize
+import dynamic/spec
 import gleam/function
 import gleam/http
 import gleam/result
@@ -34,6 +37,7 @@ pub type OpenAPIScope =
 //                                          Route Base                                           //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
+/// Create a GET route with the given [route] path.
 pub fn get(route: String) -> RouteSpecBuilder {
   backstage_core.RouteSpecBuilder(doc: fn(doc) {
     backstage_core.create_scope(
@@ -47,6 +51,7 @@ pub fn get(route: String) -> RouteSpecBuilder {
   })
 }
 
+/// Create a POST route with the given [route] path.
 pub fn post(route: String) -> RouteSpecBuilder {
   backstage_core.RouteSpecBuilder(doc: fn(doc) {
     backstage_core.create_scope(
@@ -57,6 +62,32 @@ pub fn post(route: String) -> RouteSpecBuilder {
       method: http.Post,
       route: route,
     )
+  })
+}
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                        Route Modifier                                         //
+// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+/// Set the [summary] of the route.
+pub fn summary(spec: RouteSpecBuilder, summary: String) -> RouteSpecBuilder {
+  backstage_core.RouteSpecBuilder(doc: fn(doc) {
+    doc
+    |> spec.doc()
+    |> backstage_core.modify_operation(fn(operation) {
+      operation |> openapi.operation.summary(summary)
+    })
+  })
+}
+
+/// Set the [tag] of the route.
+pub fn tag(spec: RouteSpecBuilder, tag: String) -> RouteSpecBuilder {
+  backstage_core.RouteSpecBuilder(doc: fn(doc) {
+    doc
+    |> spec.doc()
+    |> backstage_core.modify_operation(fn(operation) {
+      operation |> openapi.operation.tag(tag)
+    })
   })
 }
 
@@ -108,22 +139,23 @@ pub fn bearer_auth(
     RouteSpec(object),
 ) -> RouteSpec(object) {
   use spec, unauthorized <- unauthorized(spec)
-  next(
-    backstage_core.RouteSpecBuilder(doc: fn(doc) {
-      doc
-      |> spec.doc()
-      |> backstage_core.modify_operation(fn(operation) {
-        operation
-        |> openapi.operation.security(name)
+
+  spec
+  |> backstage_core.modify_spec(fn(scope) {
+    scope
+    |> backstage_core.modify_operation(fn(operation) {
+      operation
+      |> openapi.operation.security(name)
+    })
+    |> backstage_core.modify_doc(fn(doc) {
+      openapi.components.security_scheme(doc, name, "http", fn(security) {
+        security
+        |> openapi.security_scheme.scheme("bearer")
+        |> openapi.security_scheme.bearer_format("JWT")
       })
-      |> backstage_core.modify_doc(fn(doc) {
-        openapi.components.security_scheme(doc, name, "http", fn(security) {
-          security
-          |> openapi.security_scheme.scheme("bearer")
-          |> openapi.security_scheme.bearer_format("JWT")
-        })
-      })
-    }),
+    })
+  })
+  |> next(
     backstage_core.RouteCapability(get: fn(request, next) {
       use unauthorized <- unauthorized.get(request)
       use token <- result.try(require_authorization(request, unauthorized))
@@ -148,30 +180,26 @@ pub fn json_body(
   next: fn(RouteSpecBuilder, RouteCapability(Body(body), object)) ->
     RouteSpec(object),
 ) -> RouteSpec(object) {
-  next(
-    backstage_core.RouteSpecBuilder(doc: fn(doc) {
-      doc
-      |> spec.doc()
-      |> backstage_core.modify_operation(fn(operation) {
-        operation
-        |> openapi.operation.request_body(fn(request_body) {
-          request_body
-          |> openapi.request_body.content("application/json", fn(media) {
-            media
-            |> openapi.media_type.schema("", fn(_) {
-              decoder.doc() |> openapi_type.to_schema()
-            })
+  spec
+  |> backstage_core.modify_spec(fn(scope) {
+    scope
+    |> backstage_core.modify_operation(fn(operation) {
+      operation
+      |> openapi.operation.request_body(fn(request_body) {
+        request_body
+        |> openapi.request_body.content("application/json", fn(media) {
+          media
+          |> openapi.media_type.schema("", fn(_) {
+            decoder.doc() |> openapi_type.to_schema()
           })
         })
       })
-    }),
-    backstage_core.RouteCapability(get: fn(request, next) {
-      use body <- result.try(backstage_core.get_json_body(
-        request,
-        decoder.decoder,
-      ))
-
-      next(Body(value: body))
+    })
+  })
+  |> next(
+    backstage_core.capability(fn(request) {
+      backstage_core.get_json_body(request, decoder.decoder)
+      |> result.map(Body)
     }),
   )
 }
@@ -215,7 +243,12 @@ pub fn bad_request(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.bad_request,
-    backstage_core.error_response_encoder("bad_request"),
+    backstage_core.error_response_serializer()
+      |> serialize.encoder()
+      |> encode.map(backstage_core.ErrorResponse(
+        status: "bad_request",
+        reason: _,
+      )),
     "Bad request",
     BadRequestResponse,
     next,
@@ -234,7 +267,12 @@ pub fn unauthorized(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.unauthorized,
-    backstage_core.error_response_encoder("unauthorized"),
+    backstage_core.error_response_serializer()
+      |> serialize.encoder()
+      |> encode.map(backstage_core.ErrorResponse(
+        status: "unauthorized",
+        reason: _,
+      )),
     "Unauthorized",
     UnauthorizedResponse,
     next,
@@ -253,7 +291,9 @@ pub fn not_found(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.not_found,
-    backstage_core.error_response_encoder("not_found"),
+    backstage_core.error_response_serializer()
+      |> serialize.encoder()
+      |> encode.map(backstage_core.ErrorResponse(status: "not_found", reason: _)),
     "Not found",
     NotFoundResponse,
     next,
@@ -272,7 +312,9 @@ pub fn conflict(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.conflict,
-    backstage_core.error_response_encoder("conflict"),
+    backstage_core.error_response_serializer()
+      |> serialize.encoder()
+      |> encode.map(backstage_core.ErrorResponse(status: "conflict", reason: _)),
     "Conflict",
     ConflictResponse,
     next,
@@ -293,7 +335,12 @@ pub fn internal_server_error(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.internal_server_error,
-    backstage_core.error_response_encoder("internal_server_error"),
+    backstage_core.error_response_serializer()
+      |> serialize.encoder()
+      |> encode.map(backstage_core.ErrorResponse(
+        status: "internal_server_error",
+        reason: _,
+      )),
     "Internal server error",
     InternalServerErrorResponse,
     next,
@@ -314,7 +361,12 @@ pub fn service_unavailable(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.service_unavailable,
-    backstage_core.error_response_encoder("service_unavailable"),
+    backstage_core.error_response_serializer()
+      |> serialize.encoder()
+      |> encode.map(backstage_core.ErrorResponse(
+        status: "service_unavailable",
+        reason: _,
+      )),
     "Service unavailable",
     ServiceUnavailableResponse,
     next,
@@ -333,10 +385,133 @@ pub fn timeout(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.timeout,
-    backstage_core.error_response_encoder("timeout"),
+    backstage_core.error_response_serializer()
+      |> serialize.encoder()
+      |> encode.map(backstage_core.ErrorResponse(status: "timeout", reason: _)),
     "Timeout",
     TimeoutResponse,
     next,
+  )
+}
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                        Query Parameter                                        //
+// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub fn pagination(
+  spec: RouteSpecBuilder,
+  config: pagination.PaginationConfig(a, b, backstage_core.Connection),
+  next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec(object),
+) -> RouteSpec(object) {
+  spec
+  |> backstage_core.modify_spec(fn(scope) {
+    scope
+    |> backstage_core.modify_operation(fn(operation) {
+      case config {
+        pagination.SimplePaginationConfig(default_page:, default_per_page:, ..) -> {
+          operation
+          |> openapi.operation.parameter(
+            "page",
+            openapi.ParameterInQuery,
+            fn(parameter) {
+              parameter
+              |> openapi.parameter.schema("", fn(_) {
+                openapi_type.integer()
+                |> openapi_type.default(spec.integer(default_page))
+                |> openapi_type.to_schema()
+              })
+            },
+          )
+          |> openapi.operation.parameter(
+            "per_page",
+            openapi.ParameterInQuery,
+            fn(parameter) {
+              parameter
+              |> openapi.parameter.schema("", fn(_) {
+                openapi_type.integer()
+                |> openapi_type.default(spec.integer(default_per_page))
+                |> openapi_type.to_schema()
+              })
+            },
+          )
+        }
+        pagination.AfterPaginationConfig(
+          default_after:,
+          after_serializer:,
+          default_per_page:,
+          ..,
+        ) -> {
+          operation
+          |> openapi.operation.parameter(
+            "after",
+            openapi.ParameterInQuery,
+            fn(parameter) {
+              parameter
+              |> openapi.parameter.schema("", fn(_) {
+                after_serializer.doc()
+                |> openapi_type.default(serialize.encode(
+                  default_after,
+                  after_serializer,
+                ))
+                |> openapi_type.to_schema()
+              })
+            },
+          )
+          |> openapi.operation.parameter(
+            "per_page",
+            openapi.ParameterInQuery,
+            fn(parameter) {
+              parameter
+              |> openapi.parameter.schema("", fn(_) {
+                openapi_type.integer()
+                |> openapi_type.default(spec.integer(default_per_page))
+                |> openapi_type.to_schema()
+              })
+            },
+          )
+        }
+        pagination.BeforePaginationConfig(
+          default_before:,
+          before_serializer:,
+          default_per_page:,
+          ..,
+        ) -> {
+          operation
+          |> openapi.operation.parameter(
+            "before",
+            openapi.ParameterInQuery,
+            fn(parameter) {
+              parameter
+              |> openapi.parameter.schema("", fn(_) {
+                before_serializer.doc()
+                |> openapi_type.default(serialize.encode(
+                  default_before,
+                  before_serializer,
+                ))
+                |> openapi_type.to_schema()
+              })
+            },
+          )
+          |> openapi.operation.parameter(
+            "per_page",
+            openapi.ParameterInQuery,
+            fn(parameter) {
+              parameter
+              |> openapi.parameter.schema("", fn(_) {
+                openapi_type.integer()
+                |> openapi_type.default(spec.integer(default_per_page))
+                |> openapi_type.to_schema()
+              })
+            },
+          )
+        }
+      }
+    })
+  })
+  |> next(
+    backstage_core.capability(fn(request) {
+      Ok(pagination.parse(config, request))
+    }),
   )
 }
 

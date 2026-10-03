@@ -1,6 +1,6 @@
 // import framework/backstage/multipart
 import dynamic/encode
-import dynamic/spec
+import dynamic/serialize
 import gleam/bit_array
 import gleam/bool
 import gleam/dynamic
@@ -25,6 +25,7 @@ pub opaque type OpenAPIScope {
   OpenAPIScope(doc: OpenAPI, method: http.Method, route: String)
 }
 
+/// Create a new OpenAPIScope using the given OpenAPI doc, http method and route path.
 pub fn create_scope(
   doc doc: OpenAPI,
   method method: http.Method,
@@ -33,6 +34,7 @@ pub fn create_scope(
   OpenAPIScope(doc: doc, method: method, route: route)
 }
 
+/// Modify the OpenAPI document in the given [scope]
 pub fn modify_doc(
   scope: OpenAPIScope,
   fun: fn(OpenAPI) -> OpenAPI,
@@ -40,6 +42,7 @@ pub fn modify_doc(
   OpenAPIScope(..scope, doc: fun(scope.doc))
 }
 
+/// Modify the OpenAPI operation in the given [scope]
 pub fn modify_operation(
   scope: OpenAPIScope,
   fun: fn(openapi.Operation) -> openapi.Operation,
@@ -64,6 +67,7 @@ pub fn modify_operation(
   )
 }
 
+/// Get the OpenAPI document from the given [scope]
 pub fn openapi_scope_doc(scope: OpenAPIScope) {
   scope.doc
 }
@@ -74,6 +78,13 @@ pub fn openapi_scope_doc(scope: OpenAPIScope) {
 
 pub type RouteSpecBuilder {
   RouteSpecBuilder(doc: fn(OpenAPI) -> OpenAPIScope)
+}
+
+pub fn modify_spec(
+  spec: RouteSpecBuilder,
+  transform: fn(OpenAPIScope) -> OpenAPIScope,
+) -> RouteSpecBuilder {
+  RouteSpecBuilder(doc: fn(doc) { doc |> spec.doc() |> transform() })
 }
 
 pub type RouteSpec(data) {
@@ -90,6 +101,16 @@ pub type RouteCapability(data, object) {
   )
 }
 
+pub fn capability(
+  get: fn(Request) -> Result(data, WispResponse),
+) -> RouteCapability(data, object) {
+  RouteCapability(
+    get: fn(request, next: fn(data) -> Result(object, WispResponse)) {
+      result.try(get(request), next)
+    },
+  )
+}
+
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                   Route Callback - Response                                   //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -103,31 +124,30 @@ pub fn json_response_internal(
   response: fn(fn(response) -> WispResponse) -> data,
   next: fn(RouteSpecBuilder, RouteCapability(data, object)) -> RouteSpec(object),
 ) -> RouteSpec(object) {
-  next(
-    RouteSpecBuilder(doc: fn(doc) {
-      doc
-      |> spec.doc()
-      |> modify_operation(fn(operation) {
-        operation
-        |> openapi.operation.response(code, fn(response) {
-          response
-          |> openapi.response.description(summary)
-          |> openapi.response.content("application/json", fn(media) {
-            media
-            |> openapi.media_type.schema("", fn(_) {
-              encoder.doc() |> openapi_type.to_schema()
-            })
+  spec
+  |> modify_spec(fn(scope) {
+    scope
+    |> modify_operation(fn(operation) {
+      operation
+      |> openapi.operation.response(code, fn(response) {
+        response
+        |> openapi.response.description(summary)
+        |> openapi.response.content("application/json", fn(media) {
+          media
+          |> openapi.media_type.schema("", fn(_) {
+            encoder.doc() |> openapi_type.to_schema()
           })
         })
       })
-    }),
-    RouteCapability(get: fn(_, next) {
-      next(
-        response(fn(response) {
-          wisp.response(code)
-          |> json_body(encode.encode_json(response, encoder))
-        }),
-      )
+    })
+  })
+  |> next(
+    capability(fn(_) {
+      response(fn(response) {
+        wisp.response(code)
+        |> json_body(encode.encode_json(response, encoder))
+      })
+      |> Ok()
     }),
   )
 }
@@ -188,15 +208,32 @@ pub fn json_body(response: WispResponse, json: json.Json) -> WispResponse {
   wisp.json_body(response, json.to_string(json))
 }
 
-pub fn error_response_encoder(status: String) -> encode.Encoder(String) {
-  encode.object([
-    encode.field(
+pub type ErrorResponse {
+  ErrorResponse(status: String, reason: String)
+}
+
+pub fn error_response_serializer() -> serialize.Serializer(ErrorResponse) {
+  serialize.object(fn(context) {
+    use context, status <- serialize.field(
+      context,
       "status",
-      fn(_) { status },
-      encode.string() |> encode.with_default(spec.String(status)),
-    ),
-    encode.field("reason", fn(message: String) { message }, encode.string()),
-  ])
+      serialize.string(),
+      fn(object: ErrorResponse) { object.status },
+    )
+    use context, reason <- serialize.field(
+      context,
+      "reason",
+      serialize.string(),
+      fn(object: ErrorResponse) { object.reason },
+    )
+
+    serialize.build(context, fn() {
+      use status <- status.get()
+      use reason <- reason.get()
+
+      serialize.success(ErrorResponse(status:, reason:))
+    })
+  })
 }
 
 pub type StatusCode {
