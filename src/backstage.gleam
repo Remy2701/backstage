@@ -6,6 +6,7 @@ import dynamic/serialize
 import dynamic/spec
 import gleam/function
 import gleam/http
+import gleam/option
 import gleam/result
 import openapi/openapi
 import openapi/openapi_type
@@ -243,7 +244,7 @@ pub fn bad_request(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.bad_request,
-    backstage_core.error_response_serializer()
+    backstage_core.error_response_serializer(option.Some("bad_request"))
       |> serialize.encoder()
       |> encode.map(backstage_core.ErrorResponse(
         status: "bad_request",
@@ -267,7 +268,7 @@ pub fn unauthorized(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.unauthorized,
-    backstage_core.error_response_serializer()
+    backstage_core.error_response_serializer(option.Some("unauthorized"))
       |> serialize.encoder()
       |> encode.map(backstage_core.ErrorResponse(
         status: "unauthorized",
@@ -291,7 +292,7 @@ pub fn not_found(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.not_found,
-    backstage_core.error_response_serializer()
+    backstage_core.error_response_serializer(option.Some("not_found"))
       |> serialize.encoder()
       |> encode.map(backstage_core.ErrorResponse(status: "not_found", reason: _)),
     "Not found",
@@ -312,7 +313,7 @@ pub fn conflict(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.conflict,
-    backstage_core.error_response_serializer()
+    backstage_core.error_response_serializer(option.Some("conflict"))
       |> serialize.encoder()
       |> encode.map(backstage_core.ErrorResponse(status: "conflict", reason: _)),
     "Conflict",
@@ -335,7 +336,9 @@ pub fn internal_server_error(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.internal_server_error,
-    backstage_core.error_response_serializer()
+    backstage_core.error_response_serializer(option.Some(
+      "internal_server_error",
+    ))
       |> serialize.encoder()
       |> encode.map(backstage_core.ErrorResponse(
         status: "internal_server_error",
@@ -361,7 +364,7 @@ pub fn service_unavailable(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.service_unavailable,
-    backstage_core.error_response_serializer()
+    backstage_core.error_response_serializer(option.Some("service_unavailable"))
       |> serialize.encoder()
       |> encode.map(backstage_core.ErrorResponse(
         status: "service_unavailable",
@@ -385,7 +388,7 @@ pub fn timeout(
   backstage_core.json_response_internal(
     spec,
     backstage_core.status_code.timeout,
-    backstage_core.error_response_serializer()
+    backstage_core.error_response_serializer(option.Some("timeout"))
       |> serialize.encoder()
       |> encode.map(backstage_core.ErrorResponse(status: "timeout", reason: _)),
     "Timeout",

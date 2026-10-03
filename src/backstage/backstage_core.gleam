@@ -1,15 +1,18 @@
 // import framework/backstage/multipart
 import dynamic/encode
 import dynamic/serialize
+import dynamic/spec
 import gleam/bit_array
 import gleam/bool
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/function
 import gleam/http
 import gleam/http/request
 import gleam/http/response
 import gleam/json
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 import mist
@@ -212,12 +215,18 @@ pub type ErrorResponse {
   ErrorResponse(status: String, reason: String)
 }
 
-pub fn error_response_serializer() -> serialize.Serializer(ErrorResponse) {
+pub fn error_response_serializer(
+  status: option.Option(String),
+) -> serialize.Serializer(ErrorResponse) {
   serialize.object(fn(context) {
     use context, status <- serialize.field(
       context,
       "status",
-      serialize.string(),
+      serialize.string()
+        |> case status {
+          option.Some(status) -> serialize.with_default(_, spec.string(status))
+          option.None -> function.identity
+        },
       fn(object: ErrorResponse) { object.status },
     )
     use context, reason <- serialize.field(
