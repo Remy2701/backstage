@@ -70,6 +70,20 @@ pub fn post(route: String) -> RouteSpecBuilder {
   })
 }
 
+/// Create a DELETE route with the given [route] path.
+pub fn delete(route: String) -> RouteSpecBuilder {
+  backstage_core.RouteSpecBuilder(doc: fn(doc) {
+    backstage_core.create_scope(
+      doc: doc
+        |> openapi.on_path(route, fn(path) {
+          openapi.path.delete(path, function.identity)
+        }),
+      method: http.Delete,
+      route: route,
+    )
+  })
+}
+
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                        Route Modifier                                         //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
