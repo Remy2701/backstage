@@ -246,13 +246,53 @@ pub fn object(
 }
 
 pub fn field(
-  context: Context(final),
-  name: String,
-  serializer: Serializer(t),
-  getter: fn(final) -> t,
-  next: fn(Context(final), t) -> decode.Decoder(#(Context(final), final)),
+  context context: Context(final),
+  name name: String,
+  serializer serializer: Serializer(t),
+  getter getter: fn(final) -> t,
+  next next: fn(Context(final), t) -> decode.Decoder(#(Context(final), final)),
 ) -> decode.Decoder(#(Context(final), final)) {
   use value <- decode.field(name, serializer.decoder)
+
+  next(
+    Context(
+      doc: fn() {
+        let doc = context.doc()
+        case doc {
+          openapi_type.Object(..) ->
+            openapi_type.Object(
+              ..doc,
+              properties: list.append(doc.properties, [
+                #(name, serializer.doc()),
+              ]),
+            )
+          _ -> openapi_type.object([#(name, serializer.doc())])
+        }
+      },
+      encoders: [
+        #(
+          name,
+          Encoder(
+            encoder: fn(object) { serializer.encoder(getter(object)) },
+            doc: serializer.doc,
+          ),
+        ),
+        ..context.encoders
+      ],
+    ),
+    value,
+  )
+}
+
+pub fn optional_field(
+  context context: Context(final),
+  name name: String,
+  default default: t,
+  serializer serializer: Serializer(t),
+  getter getter: fn(final) -> t,
+  next next: fn(Context(final), t) -> decode.Decoder(#(Context(final), final)),
+) -> decode.Decoder(#(Context(final), final)) {
+  use value <- decode.optional_field(name, default, serializer.decoder)
 
   next(
     Context(

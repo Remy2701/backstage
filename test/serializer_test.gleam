@@ -2,9 +2,34 @@ import dynamic/serialize
 import dynamic/spec
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
+import gleam/dynamic
 import gleam/option
 import gleam/time/timestamp
 import openapi/openapi_type
+
+fn serializer_suite_of_with_dynamic(
+  name: String,
+  serializer: serialize.Serializer(t),
+  doc: openapi_type.OpenAPIType,
+  value: t,
+  spec: spec.Spec,
+  dynamic: dynamic.Dynamic,
+) -> Suite {
+  Suite(name, [
+    Test("Verify doc", fn() {
+      serializer.doc()
+      |> expect.to_be_equal(doc)
+    }),
+    Test("Decode value", fn() {
+      serialize.decode(dynamic, serializer)
+      |> expect.to_be_ok_then(fn(value) { expect.to_be_equal(value, value) })
+    }),
+    Test("Encode value", fn() {
+      serialize.encode(value, serializer)
+      |> expect.to_be_equal(spec)
+    }),
+  ])
+}
 
 fn serializer_suite_of(
   name: String,
@@ -13,20 +38,14 @@ fn serializer_suite_of(
   value: t,
   spec: spec.Spec,
 ) -> Suite {
-  Suite(name, [
-    Test("Verify doc", fn() {
-      serializer.doc()
-      |> expect.to_be_equal(doc)
-    }),
-    Test("Decode value", fn() {
-      serialize.decode(spec.to_dynamic(spec), serializer)
-      |> expect.to_be_ok_then(fn(value) { expect.to_be_equal(value, value) })
-    }),
-    Test("Encode value", fn() {
-      serialize.encode(value, serializer)
-      |> expect.to_be_equal(spec)
-    }),
-  ])
+  serializer_suite_of_with_dynamic(
+    name,
+    serializer,
+    doc,
+    value,
+    spec,
+    spec.to_dynamic(spec),
+  )
 }
 
 /// Test decoding of a string value.
@@ -175,6 +194,50 @@ pub fn serialize_person_object_suite() -> Suite {
       #("name", spec.String("Alice")),
       #("age", spec.Integer(30)),
       #("is_student", spec.Boolean(True)),
+    ]),
+  )
+}
+
+pub fn serialize_person_object_optional_suite() -> Suite {
+  serializer_suite_of_with_dynamic(
+    "serialize_person_object_optional_suite",
+    serialize.object(fn(context) {
+      use context, name <- serialize.field(
+        context,
+        "name",
+        serialize.string(),
+        fn(person: Person) { person.name },
+      )
+      use context, age <- serialize.field(
+        context,
+        "age",
+        serialize.int(),
+        fn(person: Person) { person.age },
+      )
+      use context, is_student <- serialize.optional_field(
+        context: context,
+        name: "is_student",
+        default: False,
+        serializer: serialize.bool(),
+        getter: fn(person: Person) { person.is_student },
+      )
+
+      serialize.build(context, Person(name:, age:, is_student:))
+    }),
+    openapi_type.object([
+      #("name", openapi_type.string()),
+      #("age", openapi_type.integer()),
+      #("is_student", openapi_type.boolean()),
+    ]),
+    Person(name: "Alice", age: 30, is_student: True),
+    spec.Object([
+      #("name", spec.String("Alice")),
+      #("age", spec.Integer(30)),
+      #("is_student", spec.Boolean(True)),
+    ]),
+    dynamic.properties([
+      #(dynamic.string("name"), dynamic.string("Alice")),
+      #(dynamic.string("age"), dynamic.int(30)),
     ]),
   )
 }
