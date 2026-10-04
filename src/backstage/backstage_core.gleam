@@ -71,8 +71,12 @@ pub fn modify_operation(
 }
 
 /// Get the OpenAPI document from the given [scope]
-pub fn openapi_scope_doc(scope: OpenAPIScope) {
+pub fn openapi_scope_doc(scope: OpenAPIScope) -> OpenAPI {
   scope.doc
+}
+
+pub fn openapi_scope_path(scope: OpenAPIScope) -> String {
+  scope.route
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

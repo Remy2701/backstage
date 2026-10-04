@@ -11,7 +11,9 @@ import gleam/http/request
 import gleam/json
 import gleam/list
 import gleam/option
+import gleam/pair
 import gleam/result
+import gleam/uri
 import openapi/openapi
 import openapi/openapi_type
 
@@ -413,6 +415,107 @@ pub fn timeout(
     TimeoutResponse,
     next,
   )
+}
+
+// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+//                                          Parameters                                           //
+// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+pub type PathParameter(a) {
+  PathParameter(value: a)
+}
+
+fn path_parameter_internal(
+  spec: RouteSpecBuilder,
+  name: String,
+  decoder: decode.Decoder(a),
+  is_json: Bool,
+  next: fn(RouteSpecBuilder, RouteCapability(PathParameter(a), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  use spec, bad_request <- bad_request(spec)
+
+  spec
+  |> backstage_core.modify_spec(fn(scope) {
+    scope
+    |> backstage_core.modify_operation(fn(operation) {
+      operation
+      |> openapi.operation.parameter(
+        name,
+        openapi.ParameterInPath,
+        fn(parameter) {
+          parameter
+          |> openapi.parameter.required(True)
+          |> openapi.parameter.schema("", fn(_) {
+            decoder.doc() |> openapi_type.to_schema()
+          })
+        },
+      )
+    })
+  })
+  |> next(
+    backstage_core.RouteCapability(fn(request, next) {
+      use bad_request <- bad_request.get(request)
+
+      let path_segments =
+        openapi.openapi()
+        |> spec.doc()
+        |> backstage_core.openapi_scope_path()
+        |> uri.path_segments()
+        |> list.index_map(pair.new)
+
+      use segment_index <- result.try(
+        list.key_find(path_segments, ":" <> name)
+        |> result.map_error(fn(_) {
+          bad_request.apply("Failed to find path segment for '" <> name <> "'")
+        }),
+      )
+
+      use raw_value <- result.try(
+        request.path_segments(request)
+        |> list.index_map(fn(segment, index) { pair.new(index, segment) })
+        |> list.key_find(segment_index)
+        |> result.map_error(fn(_) {
+          bad_request.apply("Failed to find path segment for '" <> name <> "'")
+        }),
+      )
+
+      use value <- result.try(case is_json {
+        True ->
+          json.parse(raw_value, decoder.decoder)
+          |> result.map_error(fn(_) {
+            bad_request.apply("Failed to decode '" <> name <> "'")
+          })
+        False ->
+          decode.run(dynamic.string(raw_value), decoder)
+          |> result.map_error(fn(_) {
+            bad_request.apply("Failed to decode '" <> name <> "'")
+          })
+      })
+
+      next(PathParameter(value))
+    }),
+  )
+}
+
+pub fn path_parameter(
+  spec: RouteSpecBuilder,
+  name: String,
+  decoder: decode.Decoder(a),
+  next: fn(RouteSpecBuilder, RouteCapability(PathParameter(a), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  path_parameter_internal(spec, name, decoder, False, next)
+}
+
+pub fn json_path_parameter(
+  spec: RouteSpecBuilder,
+  name: String,
+  decoder: decode.Decoder(a),
+  next: fn(RouteSpecBuilder, RouteCapability(PathParameter(a), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  path_parameter_internal(spec, name, decoder, True, next)
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
