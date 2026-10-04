@@ -462,23 +462,14 @@ pub fn get_json_body(
         json.UnexpectedEndOfInput -> "Unexpected end of input"
         json.UnexpectedByte(_) -> "Unexpected byte"
         json.UnexpectedSequence(_) -> "Unexpected sequence"
-        json.UnableToDecode(e) ->
+        json.UnableToDecode(errors) ->
           "\n"
-          <> list.map(e, fn(e) {
-            "\t• "
-            <> case e.found {
-              "Nothing" -> "Missing field '" <> string.join(e.path, ".") <> "'"
-              _ ->
-                "Invalid value for field '"
-                <> string.join(e.path, ".")
-                <> "', expected '"
-                <> e.expected
-                <> "' but found '"
-                <> e.found
-                <> "'"
-            }
-          })
-          |> string.join("\n")
+          <> string.join(
+            list.map(errors, fn(error) {
+              "- " <> decoder_error_to_string(error)
+            }),
+            "\n",
+          )
       },
     )
   })
@@ -575,9 +566,28 @@ pub fn get_multipart_body(
   use form <- result.try(get_raw_multipart_body(req))
 
   decode.run(form_data_to_dynamic(form), decoder)
-  |> result.map_error(fn(e) {
-    bad_request("Failed to decode form " <> string.inspect(e))
+  |> result.map_error(fn(errors) {
+    bad_request(
+      "Failed to decode form:\n"
+      <> string.join(
+        list.map(errors, fn(error) { "- " <> decoder_error_to_string(error) }),
+        "\n",
+      ),
+    )
   })
+}
+
+fn decoder_error_to_string(error: decode.DecodeError) -> String {
+  case error.expected, error.found {
+    "Field", "Nothing" -> "Missing field " <> string.join(error.path, ".")
+    _, _ ->
+      "Expected "
+      <> error.expected
+      <> " at "
+      <> string.join(error.path, ".")
+      <> " but found "
+      <> error.found
+  }
 }
 
 //-----------------------------------------------------------------------------------------------//
