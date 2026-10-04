@@ -1,9 +1,9 @@
-// import framework/backstage/multipart
 import dynamic/encode
 import dynamic/serialize
 import dynamic/spec
 import gleam/bit_array
 import gleam/bool
+import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/function
@@ -13,6 +13,7 @@ import gleam/http/response
 import gleam/json
 import gleam/list
 import gleam/option
+import gleam/pair
 import gleam/result
 import gleam/string
 import mist
@@ -415,12 +416,7 @@ pub fn is_content_type(req: Request, expected: String) -> Bool {
   }
 }
 
-pub fn get_raw_json_body(req: Request) -> Result(String, WispResponse) {
-  use <- bool.guard(
-    !is_content_type(req, "application/json"),
-    Error(wisp.bad_request("Expected content type 'application/json'")),
-  )
-
+fn get_raw_string_body(req: Request) -> Result(String, WispResponse) {
   let body_bits = case req.body {
     MistConnection(connection) -> {
       let req = request.map(req, fn(_) { connection })
@@ -445,6 +441,15 @@ pub fn get_raw_json_body(req: Request) -> Result(String, WispResponse) {
   )
 
   Ok(body)
+}
+
+pub fn get_raw_json_body(req: Request) -> Result(String, WispResponse) {
+  use <- bool.guard(
+    !is_content_type(req, "application/json"),
+    Error(wisp.bad_request("Expected content type 'application/json'")),
+  )
+
+  get_raw_string_body(req)
 }
 
 /// Get the body of the request
@@ -481,6 +486,102 @@ pub fn get_json_body(
           |> string.join("\n")
       },
     )
+  })
+}
+
+fn form_data_to_string(form: wisp.FormData) -> String {
+  json.object([
+    #(
+      "values",
+      json.object(list.map(form.values, pair.map_second(_, json.string))),
+    ),
+    #(
+      "files",
+      json.object(
+        list.map(
+          form.files,
+          pair.map_second(_, fn(file) {
+            json.object([
+              #("file_name", json.string(file.file_name)),
+              #("path", json.string(file.path)),
+            ])
+          }),
+        ),
+      ),
+    ),
+  ])
+  |> json.to_string()
+}
+
+fn form_data_from_string(str: String) -> Result(wisp.FormData, Nil) {
+  json.parse(str, {
+    use values <- decode.field(
+      "values",
+      decode.dict(decode.string, decode.string),
+    )
+    use files <- decode.field(
+      "files",
+      decode.dict(decode.string, {
+        use file_name <- decode.field("file_name", decode.string)
+        use path <- decode.field("path", decode.string)
+        decode.success(wisp.UploadedFile(file_name:, path:))
+      }),
+    )
+    decode.success(wisp.FormData(
+      values: dict.to_list(values),
+      files: dict.to_list(files),
+    ))
+  })
+  |> result.replace_error(Nil)
+}
+
+pub fn get_raw_multipart_body(
+  req: Request,
+) -> Result(wisp.FormData, WispResponse) {
+  let assert WispConnection(connection) = req.body
+  let req = request.map(req, fn(_) { connection })
+  let response =
+    wisp.require_form(req, fn(form) {
+      wisp.ok()
+      |> wisp.string_body(form_data_to_string(form))
+    })
+  case response.status, response.body {
+    200, wisp.Text(body) -> {
+      form_data_from_string(body)
+      |> result.map_error(fn(_) { bad_request("Invalid form encoding") })
+    }
+    _, _ -> Error(response)
+  }
+}
+
+fn form_data_to_dynamic(form: wisp.FormData) -> dynamic.Dynamic {
+  dynamic.properties(
+    list.map(form.values, fn(pair) {
+      #(dynamic.string(pair.0), dynamic.string(pair.1))
+    })
+    |> list.append(
+      list.map(form.files, fn(pair) {
+        #(
+          dynamic.string(pair.0),
+          dynamic.properties([
+            #(dynamic.string("file_name"), dynamic.string(pair.1.file_name)),
+            #(dynamic.string("path"), dynamic.string(pair.1.path)),
+          ]),
+        )
+      }),
+    ),
+  )
+}
+
+pub fn get_multipart_body(
+  req: Request,
+  decoder: decode.Decoder(a),
+) -> Result(a, WispResponse) {
+  use form <- result.try(get_raw_multipart_body(req))
+
+  decode.run(form_data_to_dynamic(form), decoder)
+  |> result.map_error(fn(e) {
+    bad_request("Failed to decode form " <> string.inspect(e))
   })
 }
 

@@ -225,6 +225,37 @@ pub fn json_body(
   )
 }
 
+/// Add a multipart body with the given decoder to the route
+pub fn multipart_body(
+  spec: RouteSpecBuilder,
+  decoder: decode.Decoder(body),
+  next: fn(RouteSpecBuilder, RouteCapability(Body(body), object)) ->
+    RouteSpec(object),
+) -> RouteSpec(object) {
+  spec
+  |> backstage_core.modify_spec(fn(scope) {
+    scope
+    |> backstage_core.modify_operation(fn(operation) {
+      operation
+      |> openapi.operation.request_body(fn(request_body) {
+        request_body
+        |> openapi.request_body.content("multipart/form-data", fn(media) {
+          media
+          |> openapi.media_type.schema("", fn(_) {
+            decoder.doc() |> openapi_type.to_schema()
+          })
+        })
+      })
+    })
+  })
+  |> next(
+    backstage_core.capability(fn(request) {
+      backstage_core.get_multipart_body(request, decoder.decoder)
+      |> result.map(Body)
+    }),
+  )
+}
+
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                           Response                                            //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

@@ -5,6 +5,7 @@ packages = [
   { name = "directories", version = "1.2.0", build_tools = ["gleam"], requirements = ["envoy", "gleam_stdlib", "platform", "simplifile"], otp_app = "directories", source = "hex", outer_checksum = "D13090CFCDF6759B87217E8DDD73A75903A700148A82C1D33799F333E249BF9E" },
   { name = "envoy", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "envoy", source = "hex", outer_checksum = "9C6FBB6BFA02A52798BEEC5977A738CAD6E4A057F4B67FD0C8061AD2502C191A" },
   { name = "exception", version = "2.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "exception", source = "hex", outer_checksum = "6BDEA95248093599391C3B5DF1835C5C6A86C353C2F99CE539B450E3432FE117" },
+  { name = "file_streams", version = "2.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "file_streams", source = "hex", outer_checksum = "A12E1E618C7845D1C4FE88DD6096DF99FE9696FC56C9135765CE474FABF53F1A" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },
   { name = "garanti", version = "0.1.1", build_tools = ["gleam"], requirements = ["gleam_javascript", "gleam_stdlib", "pretty_diff"], otp_app = "garanti", source = "hex", outer_checksum = "A64D348D25B9F4E90ABACDEA8D0E50B6112C12628CCB3DF66DB2AB88CB298BBD" },
   { name = "glam", version = "2.0.4", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glam", source = "hex", outer_checksum = "48A043A12091F93D911C316DD8F7FFD03CD9FF6F50848FC56E359D3C168DF0FA" },
@@ -33,6 +34,7 @@ packages = [
 ]
 
 [requirements]
+file_streams = { version = ">= 2.0.0 and < 3.0.0" }
 garanti = { version = ">= 0.1.1 and < 1.0.0" }
 gleam_http = { version = ">= 4.4.0 and < 5.0.0" }
 gleam_json = { version = ">= 3.1.0 and < 4.0.0" }
