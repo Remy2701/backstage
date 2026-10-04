@@ -324,6 +324,117 @@ pub fn optional_field(
   )
 }
 
+fn indexed_field_loop(
+  context context: Context(final),
+  name name: String,
+  index index: Int,
+  max max: Int,
+  serializer serializer: Serializer(t),
+  getter getter: fn(final, Int) -> t,
+  next next: fn(Context(final), List(t)) ->
+    decode.Decoder(#(Context(final), final)),
+) -> decode.Decoder(#(Context(final), final)) {
+  case index {
+    0 -> next(context, [])
+    _ -> {
+      use context, value <- field(
+        context,
+        name <> "[" <> int.to_string(max - index) <> "]",
+        serializer,
+        getter(_, max - index),
+      )
+
+      use context, rest <- indexed_field_loop(
+        context,
+        name,
+        index - 1,
+        max,
+        serializer,
+        getter,
+      )
+      next(context, [value, ..rest])
+    }
+  }
+}
+
+pub fn indexed_field(
+  context context: Context(final),
+  name name: String,
+  count count: Int,
+  serializer serializer: Serializer(t),
+  getter getter: fn(final, Int) -> t,
+  next next: fn(Context(final), List(t)) ->
+    decode.Decoder(#(Context(final), final)),
+) -> decode.Decoder(#(Context(final), final)) {
+  indexed_field_loop(
+    context,
+    name,
+    count,
+    count,
+    serializer,
+    getter,
+    fn(context, values) { next(context, values) },
+  )
+}
+
+fn optional_indexed_field_loop(
+  context context: Context(final),
+  name name: String,
+  index index: Int,
+  max max: Int,
+  default default: t,
+  serializer serializer: Serializer(t),
+  getter getter: fn(final, Int) -> t,
+  next next: fn(Context(final), List(t)) ->
+    decode.Decoder(#(Context(final), final)),
+) -> decode.Decoder(#(Context(final), final)) {
+  case index {
+    0 -> next(context, [])
+    _ -> {
+      use context, value <- optional_field(
+        context,
+        name <> "[" <> int.to_string(max - index) <> "]",
+        default,
+        serializer,
+        getter(_, max - index),
+      )
+
+      use context, rest <- optional_indexed_field_loop(
+        context,
+        name,
+        index - 1,
+        max,
+        default,
+        serializer,
+        getter,
+      )
+      next(context, [value, ..rest])
+    }
+  }
+}
+
+pub fn optional_indexed_field(
+  context context: Context(final),
+  name name: String,
+  count count: Int,
+  default default: t,
+  serializer serializer: Serializer(t),
+  getter getter: fn(final, Int) -> t,
+  next next: fn(Context(final), List(t)) ->
+    decode.Decoder(#(Context(final), final)),
+) -> decode.Decoder(#(Context(final), final)) {
+  optional_indexed_field_loop(
+    context,
+    name,
+    count,
+    count,
+    default,
+    serializer,
+    getter,
+    fn(context, values) { next(context, values) },
+  )
+}
+
 pub fn build(
   context: Context(t),
   value: t,

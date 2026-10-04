@@ -3,7 +3,10 @@ import dynamic/spec
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
 import gleam/dynamic
+import gleam/list
 import gleam/option
+import gleam/pair
+import gleam/result
 import gleam/time/timestamp
 import openapi/openapi_type
 
@@ -238,6 +241,85 @@ pub fn serialize_person_object_optional_suite() -> Suite {
     dynamic.properties([
       #(dynamic.string("name"), dynamic.string("Alice")),
       #(dynamic.string("age"), dynamic.int(30)),
+    ]),
+  )
+}
+
+pub fn serialize_indexed_fields_suite() -> Suite {
+  serializer_suite_of(
+    "serialize_indexed_fields",
+    serialize.object(fn(context) {
+      use context, values <- serialize.indexed_field(
+        context,
+        "value",
+        5,
+        serialize.string(),
+        fn(values: List(String), index) {
+          list.index_map(values, fn(value, index) { pair.new(index, value) })
+          |> list.key_find(index)
+          |> result.unwrap("")
+        },
+      )
+
+      serialize.build(context, values)
+    }),
+    openapi_type.object([
+      #("value[0]", openapi_type.string()),
+      #("value[1]", openapi_type.string()),
+      #("value[2]", openapi_type.string()),
+      #("value[3]", openapi_type.string()),
+      #("value[4]", openapi_type.string()),
+    ]),
+    ["a", "b", "c", "d", "e"],
+    spec.Object([
+      #("value[0]", spec.String("a")),
+      #("value[1]", spec.String("b")),
+      #("value[2]", spec.String("c")),
+      #("value[3]", spec.String("d")),
+      #("value[4]", spec.String("e")),
+    ]),
+  )
+}
+
+pub fn serialize_optional_indexed_fields_suite() -> Suite {
+  serializer_suite_of_with_dynamic(
+    "serialize_optional_indexed_fields",
+    serialize.object(fn(context) {
+      use context, values <- serialize.optional_indexed_field(
+        context,
+        "value",
+        5,
+        "z",
+        serialize.string(),
+        fn(values: List(String), index) {
+          list.index_map(values, fn(value, index) { pair.new(index, value) })
+          |> list.key_find(index)
+          |> result.unwrap("")
+        },
+      )
+
+      serialize.build(context, values)
+    }),
+    openapi_type.object([
+      #("value[0]", openapi_type.string()),
+      #("value[1]", openapi_type.string()),
+      #("value[2]", openapi_type.string()),
+      #("value[3]", openapi_type.string()),
+      #("value[4]", openapi_type.string()),
+    ]),
+    ["a", "b", "c", "d", "e"],
+    spec.Object([
+      #("value[0]", spec.String("a")),
+      #("value[1]", spec.String("b")),
+      #("value[2]", spec.String("c")),
+      #("value[3]", spec.String("d")),
+      #("value[4]", spec.String("e")),
+    ]),
+    dynamic.properties([
+      #(dynamic.string("value[0]"), dynamic.string("a")),
+      #(dynamic.string("value[1]"), dynamic.string("b")),
+      #(dynamic.string("value[2]"), dynamic.string("c")),
+      #(dynamic.string("value[3]"), dynamic.string("d")),
     ]),
   )
 }
