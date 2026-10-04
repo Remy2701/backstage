@@ -241,12 +241,7 @@ pub fn error_response_serializer(
       fn(object: ErrorResponse) { object.reason },
     )
 
-    serialize.build(context, fn() {
-      use status <- status.get()
-      use reason <- reason.get()
-
-      serialize.success(ErrorResponse(status:, reason:))
-    })
+    serialize.build(context, ErrorResponse(status:, reason:))
   })
 }
 

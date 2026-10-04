@@ -163,13 +163,7 @@ pub fn serialize_person_object_suite() -> Suite {
         fn(person: Person) { person.is_student },
       )
 
-      serialize.build(context, fn() {
-        use name <- name.get()
-        use age <- age.get()
-        use is_student <- is_student.get()
-
-        serialize.success(Person(name: name, age: age, is_student: is_student))
-      })
+      serialize.build(context, Person(name:, age:, is_student:))
     }),
     openapi_type.object([
       #("name", openapi_type.string()),

@@ -6,6 +6,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{type Option}
 import gleam/pair
+import gleam/result
 import gleam/time/calendar
 import gleam/time/timestamp.{type Timestamp}
 import json_value.{type JsonValue}
@@ -213,48 +214,35 @@ pub type Context(t) {
   Context(doc: fn() -> OpenAPIType, encoders: List(FieldEncoder(t)))
 }
 
-pub type Field(t, o) {
-  Field(get: fn(fn(t) -> decode.Decoder(o)) -> decode.Decoder(o))
+pub fn empty_object() -> Serializer(Nil) {
+  object(build(_, Nil))
 }
 
-pub type Object(t) {
-  Object(
-    build: fn() -> decode.Decoder(t),
-    encoders: List(FieldEncoder(t)),
-    doc: fn() -> OpenAPIType,
-  )
-}
-
-pub fn build(
-  context: Context(t),
-  builder: fn() -> decode.Decoder(t),
-) -> Object(t) {
-  Object(
-    build: builder,
-    doc: context.doc,
-    encoders: list.reverse(context.encoders),
-  )
-}
-
-pub fn object(next: fn(Context(t)) -> Object(t)) -> Serializer(t) {
+pub fn object(
+  next: fn(Context(t)) -> decode.Decoder(#(Context(t), t)),
+) -> Serializer(t) {
   let result =
     next(Context(doc: fn() { openapi_type.object([]) }, encoders: []))
   Serializer(
-    decoder: result.build(),
+    decoder: decode.map(result, pair.second),
     encoder: fn(data) {
+      let encoders =
+        decode.run(dynamic.nil(), decode.map_errors(result, fn(_) { [] }))
+        |> result.map(fn(value) { value.0.encoders })
+        |> result.unwrap([])
+
       spec.object(
-        list.map(
-          result.encoders,
-          pair.map_second(_, fn(value) { value.encoder(data) }),
-        ),
+        encoders
+        |> list.reverse
+        |> list.map(pair.map_second(_, fn(value) { value.encoder(data) })),
       )
     },
-    doc: result.doc,
+    doc: fn() {
+      decode.run(dynamic.nil(), decode.map_errors(result, fn(_) { [] }))
+      |> result.map(fn(value) { value.0.doc() })
+      |> result.unwrap(openapi_type.object([]))
+    },
   )
-}
-
-pub fn empty_object() -> Serializer(Nil) {
-  object(build(_, fn() { decode.success(Nil) }))
 }
 
 pub fn field(
@@ -262,8 +250,10 @@ pub fn field(
   name: String,
   serializer: Serializer(t),
   getter: fn(final) -> t,
-  next: fn(Context(final), Field(t, final)) -> Object(final),
-) {
+  next: fn(Context(final), t) -> decode.Decoder(#(Context(final), final)),
+) -> decode.Decoder(#(Context(final), final)) {
+  use value <- decode.field(name, serializer.decoder)
+
   next(
     Context(
       doc: fn() {
@@ -290,11 +280,15 @@ pub fn field(
         ..context.encoders
       ],
     ),
-    Field(get: fn(next) {
-      use value <- decode.field(name, serializer.decoder)
-      next(value)
-    }),
+    value,
   )
+}
+
+pub fn build(
+  context: Context(t),
+  value: t,
+) -> decode.Decoder(#(Context(t), t)) {
+  decode.success(#(context, value))
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

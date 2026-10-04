@@ -52,12 +52,7 @@ pub fn raw_uploaded_file() -> serialize.Serializer(wisp.UploadedFile) {
         fn(value: wisp.UploadedFile) { value.path },
       )
 
-      serialize.build(context, fn() {
-        use file_name <- file_name.get()
-        use path <- path.get()
-
-        serialize.success(wisp.UploadedFile(file_name:, path:))
-      })
+      serialize.build(context, wisp.UploadedFile(file_name:, path:))
     }),
     doc: fn() { openapi_type.string() |> openapi_type.format("binary") },
   )

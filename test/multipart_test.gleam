@@ -3,7 +3,6 @@ import backstage/multipart
 import dynamic/serialize
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
-import gleam/dynamic/decode
 import gleam/http
 import gleam/http/request
 import gleam/time/calendar
@@ -77,15 +76,10 @@ pub fn multipart_body_suite() -> Suite {
               fn(book: Book) { book.cover },
             )
 
-            serialize.build(context, fn() {
-              use author <- author.get()
-              use title <- title.get()
-              use pages <- pages.get()
-              use published_on <- published_on.get()
-              use cover <- cover.get()
-
-              decode.success(Book(author, title, pages, published_on, cover))
-            })
+            serialize.build(
+              context,
+              Book(author, title, pages, published_on, cover),
+            )
           }).decoder,
         )
 
