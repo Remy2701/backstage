@@ -207,10 +207,10 @@ pub fn json_value() -> Serializer(JsonValue) {
 //                                        Object & Fields                                        //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-pub type FieldEncoder(a) =
+type FieldEncoder(a) =
   #(String, Encoder(a))
 
-pub type Context(t) {
+pub opaque type Context(t) {
   Context(doc: fn() -> OpenAPIType, encoders: List(FieldEncoder(t)))
 }
 
