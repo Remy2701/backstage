@@ -438,6 +438,10 @@ fn parameter_schema(
   Parameter(..parameter, schema: Some(builder(schema_create(type_))))
 }
 
+fn parameter_set_schema(parameter: Parameter, schema: Schema) -> Parameter {
+  Parameter(..parameter, schema: Some(schema))
+}
+
 // ––––––––––––––––––––––––––––––––––––––––– Namespace ––––––––––––––––––––––––––––––––––––––––– //
 
 pub type ParameterNS {
@@ -448,6 +452,7 @@ pub type ParameterNS {
     deprecated: fn(Parameter, Bool) -> Parameter,
     allow_empty_value: fn(Parameter, Bool) -> Parameter,
     schema: fn(Parameter, String, fn(Schema) -> Schema) -> Parameter,
+    set_schema: fn(Parameter, Schema) -> Parameter,
   )
 }
 
@@ -458,6 +463,7 @@ pub const parameter: ParameterNS = ParameterNS(
   deprecated: parameter_deprecated,
   allow_empty_value: parameter_allow_empty_value,
   schema: parameter_schema,
+  set_schema: parameter_set_schema,
 )
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -485,6 +491,10 @@ fn media_type_schema(
   MediaType(..media_type, schema: Some(builder(schema_create(type_))))
 }
 
+fn media_type_set_schema(media_type: MediaType, schema: Schema) -> MediaType {
+  MediaType(..media_type, schema: Some(schema))
+}
+
 fn media_type_example(media_type: MediaType, example: String) -> MediaType {
   MediaType(..media_type, example: Some(example))
 }
@@ -495,6 +505,7 @@ pub type MediaTypeNS {
   MediaTypeNS(
     to_spec: fn(MediaType) -> spec.Spec,
     schema: fn(MediaType, String, fn(Schema) -> Schema) -> MediaType,
+    set_schema: fn(MediaType, Schema) -> MediaType,
     example: fn(MediaType, String) -> MediaType,
   )
 }
@@ -502,6 +513,7 @@ pub type MediaTypeNS {
 pub const media_type: MediaTypeNS = MediaTypeNS(
   to_spec: media_type_to_spec,
   schema: media_type_schema,
+  set_schema: media_type_set_schema,
   example: media_type_example,
 )
 
@@ -1181,6 +1193,22 @@ fn components_schema(
   )
 }
 
+fn components_set_schema(
+  openapi: OpenAPI,
+  name: String,
+  schema: Schema,
+) -> OpenAPI {
+  OpenAPI(
+    ..openapi,
+    components: Components(
+      ..openapi.components,
+      schemas: list.append(openapi.components.schemas, [
+        #(name, schema),
+      ]),
+    ),
+  )
+}
+
 fn components_response(
   openapi: OpenAPI,
   name: String,
@@ -1262,6 +1290,7 @@ pub type ComponentsNS {
   ComponentsNS(
     to_spec: fn(Components) -> spec.Spec,
     schema: fn(OpenAPI, String, String, fn(Schema) -> Schema) -> OpenAPI,
+    set_schema: fn(OpenAPI, String, Schema) -> OpenAPI,
     response: fn(OpenAPI, String, fn(Response) -> Response) -> OpenAPI,
     parameter: fn(
       OpenAPI,
@@ -1282,6 +1311,7 @@ pub type ComponentsNS {
 pub const components: ComponentsNS = ComponentsNS(
   to_spec: components_to_spec,
   schema: components_schema,
+  set_schema: components_set_schema,
   response: components_response,
   parameter: components_parameter,
   security_scheme: components_security_scheme,

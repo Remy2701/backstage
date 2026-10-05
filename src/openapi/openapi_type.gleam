@@ -1,4 +1,4 @@
-import dynamic/spec
+import dynamic/spec.{type Spec}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import openapi/openapi
@@ -7,36 +7,24 @@ import openapi/openapi
 pub type OpenAPIType {
   String(
     format: Option(String),
-    default: Option(spec.Spec),
-    examples: List(spec.Spec),
+    default: Option(Spec),
+    examples: List(Spec),
     pattern: Option(String),
     enum: List(String),
   )
-  Integer(
-    format: Option(String),
-    default: Option(spec.Spec),
-    examples: List(spec.Spec),
-  )
-  Number(
-    format: Option(String),
-    default: Option(spec.Spec),
-    examples: List(spec.Spec),
-  )
-  Boolean(
-    format: Option(String),
-    default: Option(spec.Spec),
-    examples: List(spec.Spec),
-  )
+  Integer(format: Option(String), default: Option(Spec), examples: List(Spec))
+  Number(format: Option(String), default: Option(Spec), examples: List(Spec))
+  Boolean(format: Option(String), default: Option(Spec), examples: List(Spec))
   Array(
     format: Option(String),
-    default: Option(spec.Spec),
-    examples: List(spec.Spec),
+    default: Option(Spec),
+    examples: List(Spec),
     items: Option(OpenAPIType),
   )
   Object(
     format: Option(String),
-    default: Option(spec.Spec),
-    examples: List(spec.Spec),
+    default: Option(Spec),
+    examples: List(Spec),
     properties: List(ObjectProperty),
   )
   Null
@@ -62,7 +50,7 @@ pub fn format(type_: OpenAPIType, format fmt: String) -> OpenAPIType {
 }
 
 /// Specify the default value for an OpenAPI type.
-pub fn default(type_: OpenAPIType, default dflt: spec.Spec) -> OpenAPIType {
+pub fn default(type_: OpenAPIType, default dflt: Spec) -> OpenAPIType {
   case type_ {
     String(..) -> String(..type_, default: Some(dflt))
     Integer(..) -> Integer(..type_, default: Some(dflt))
@@ -76,7 +64,7 @@ pub fn default(type_: OpenAPIType, default dflt: spec.Spec) -> OpenAPIType {
 }
 
 /// Specify an example value for an OpenAPI type.
-pub fn example(type_: OpenAPIType, example ex: spec.Spec) -> OpenAPIType {
+pub fn example(type_: OpenAPIType, example ex: Spec) -> OpenAPIType {
   case type_ {
     String(..) -> String(..type_, examples: list.append(type_.examples, [ex]))
     Integer(..) -> Integer(..type_, examples: list.append(type_.examples, [ex]))
@@ -178,7 +166,7 @@ fn format_of(type_: OpenAPIType) -> Option(String) {
 }
 
 /// Get the default value of the OpenAPI type, if any.
-fn default_of(type_: OpenAPIType) -> Option(spec.Spec) {
+fn default_of(type_: OpenAPIType) -> Option(Spec) {
   case type_ {
     String(default:, ..) -> default
     Integer(default:, ..) -> default
@@ -192,7 +180,7 @@ fn default_of(type_: OpenAPIType) -> Option(spec.Spec) {
 }
 
 /// Get the examples of the OpenAPI type, if any.
-fn examples_of(type_: OpenAPIType) -> List(spec.Spec) {
+fn examples_of(type_: OpenAPIType) -> List(Spec) {
   case type_ {
     String(examples:, ..) -> examples
     Integer(examples:, ..) -> examples
