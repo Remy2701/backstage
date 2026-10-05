@@ -188,9 +188,21 @@ pub fn serialize_person_object_suite() -> Suite {
       serialize.build(context, Person(name:, age:, is_student:))
     }),
     openapi_type.object([
-      #("name", openapi_type.string()),
-      #("age", openapi_type.integer()),
-      #("is_student", openapi_type.boolean()),
+      openapi_type.ObjectProperty(
+        name: "name",
+        type_: openapi_type.string(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "age",
+        type_: openapi_type.integer(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "is_student",
+        type_: openapi_type.boolean(),
+        required: True,
+      ),
     ]),
     Person(name: "Alice", age: 30, is_student: True),
     spec.Object([
@@ -228,9 +240,21 @@ pub fn serialize_person_object_optional_suite() -> Suite {
       serialize.build(context, Person(name:, age:, is_student:))
     }),
     openapi_type.object([
-      #("name", openapi_type.string()),
-      #("age", openapi_type.integer()),
-      #("is_student", openapi_type.boolean()),
+      openapi_type.ObjectProperty(
+        name: "name",
+        type_: openapi_type.string(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "age",
+        type_: openapi_type.integer(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "is_student",
+        type_: openapi_type.boolean(),
+        required: False,
+      ),
     ]),
     Person(name: "Alice", age: 30, is_student: True),
     spec.Object([
@@ -264,11 +288,31 @@ pub fn serialize_indexed_fields_suite() -> Suite {
       serialize.build(context, values)
     }),
     openapi_type.object([
-      #("value[0]", openapi_type.string()),
-      #("value[1]", openapi_type.string()),
-      #("value[2]", openapi_type.string()),
-      #("value[3]", openapi_type.string()),
-      #("value[4]", openapi_type.string()),
+      openapi_type.ObjectProperty(
+        name: "value[0]",
+        type_: openapi_type.string(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[1]",
+        type_: openapi_type.string(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[2]",
+        type_: openapi_type.string(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[3]",
+        type_: openapi_type.string(),
+        required: True,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[4]",
+        type_: openapi_type.string(),
+        required: True,
+      ),
     ]),
     ["a", "b", "c", "d", "e"],
     spec.Object([
@@ -301,11 +345,31 @@ pub fn serialize_optional_indexed_fields_suite() -> Suite {
       serialize.build(context, values)
     }),
     openapi_type.object([
-      #("value[0]", openapi_type.string()),
-      #("value[1]", openapi_type.string()),
-      #("value[2]", openapi_type.string()),
-      #("value[3]", openapi_type.string()),
-      #("value[4]", openapi_type.string()),
+      openapi_type.ObjectProperty(
+        name: "value[0]",
+        type_: openapi_type.string(),
+        required: False,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[1]",
+        type_: openapi_type.string(),
+        required: False,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[2]",
+        type_: openapi_type.string(),
+        required: False,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[3]",
+        type_: openapi_type.string(),
+        required: False,
+      ),
+      openapi_type.ObjectProperty(
+        name: "value[4]",
+        type_: openapi_type.string(),
+        required: False,
+      ),
     ]),
     ["a", "b", "c", "d", "e"],
     spec.Object([

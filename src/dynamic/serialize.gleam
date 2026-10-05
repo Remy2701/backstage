@@ -258,15 +258,19 @@ pub fn field(
     Context(
       doc: fn() {
         let doc = context.doc()
+        let property =
+          openapi_type.ObjectProperty(
+            name: name,
+            type_: serializer.doc(),
+            required: True,
+          )
         case doc {
           openapi_type.Object(..) ->
             openapi_type.Object(
               ..doc,
-              properties: list.append(doc.properties, [
-                #(name, serializer.doc()),
-              ]),
+              properties: list.append(doc.properties, [property]),
             )
-          _ -> openapi_type.object([#(name, serializer.doc())])
+          _ -> openapi_type.object([property])
         }
       },
       encoders: [
@@ -298,15 +302,19 @@ pub fn optional_field(
     Context(
       doc: fn() {
         let doc = context.doc()
+        let property =
+          openapi_type.ObjectProperty(
+            name: name,
+            type_: serializer.doc(),
+            required: False,
+          )
         case doc {
           openapi_type.Object(..) ->
             openapi_type.Object(
               ..doc,
-              properties: list.append(doc.properties, [
-                #(name, serializer.doc()),
-              ]),
+              properties: list.append(doc.properties, [property]),
             )
-          _ -> openapi_type.object([#(name, serializer.doc())])
+          _ -> openapi_type.object([property])
         }
       },
       encoders: [

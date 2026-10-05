@@ -37,10 +37,14 @@ pub type OpenAPIType {
     format: Option(String),
     default: Option(spec.Spec),
     examples: List(spec.Spec),
-    properties: List(#(String, OpenAPIType)),
+    properties: List(ObjectProperty),
   )
   Null
   Option(of: OpenAPIType)
+}
+
+pub type ObjectProperty {
+  ObjectProperty(name: String, type_: OpenAPIType, required: Bool)
 }
 
 /// Specify the format for an OpenAPI type.
@@ -136,7 +140,7 @@ pub fn array(items: OpenAPIType) -> OpenAPIType {
 }
 
 /// An object type with the given properties and no specific format, default, or examples.
-pub fn object(properties: List(#(String, OpenAPIType))) -> OpenAPIType {
+pub fn object(properties: List(ObjectProperty)) -> OpenAPIType {
   Object(format: None, default: None, properties: properties, examples: [])
 }
 
@@ -218,7 +222,7 @@ pub fn to_schema(type_: OpenAPIType) -> openapi.Schema {
     properties: case type_ {
       Object(properties:, ..) ->
         properties
-        |> list.map(fn(entry) { #(entry.0, to_schema(entry.1)) })
+        |> list.map(fn(entry) { #(entry.name, to_schema(entry.type_)) })
       _ -> []
     },
     enum: case type_ {
@@ -226,7 +230,10 @@ pub fn to_schema(type_: OpenAPIType) -> openapi.Schema {
       _ -> []
     },
     required: case type_ {
-      Object(properties:, ..) -> properties |> list.map(fn(entry) { entry.0 })
+      Object(properties:, ..) ->
+        properties
+        |> list.filter(fn(entry) { entry.required })
+        |> list.map(fn(entry) { entry.name })
       _ -> []
     },
     examples: examples_of(type_),
