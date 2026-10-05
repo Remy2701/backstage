@@ -224,9 +224,9 @@ pub fn json_body(
         request_body
         |> openapi.request_body.content("application/json", fn(media) {
           media
-          |> openapi.media_type.schema("", fn(_) {
-            decoder.doc() |> openapi_type.to_schema()
-          })
+          |> openapi.media_type.set_schema(
+            decoder.doc() |> openapi_type.to_schema(),
+          )
         })
       })
     })
@@ -255,9 +255,9 @@ pub fn multipart_body(
         request_body
         |> openapi.request_body.content("multipart/form-data", fn(media) {
           media
-          |> openapi.media_type.schema("", fn(_) {
-            decoder.doc() |> openapi_type.to_schema()
-          })
+          |> openapi.media_type.set_schema(
+            decoder.doc() |> openapi_type.to_schema(),
+          )
         })
       })
     })
@@ -491,9 +491,9 @@ fn path_parameter_internal(
         fn(parameter) {
           parameter
           |> openapi.parameter.required(True)
-          |> openapi.parameter.schema("", fn(_) {
-            decoder.doc() |> openapi_type.to_schema()
-          })
+          |> openapi.parameter.set_schema(
+            decoder.doc() |> openapi_type.to_schema(),
+          )
         },
       )
     })
@@ -593,9 +593,9 @@ fn query_parameter_internal(
         fn(parameter) {
           parameter
           |> openapi.parameter.required(option.is_none(default))
-          |> openapi.parameter.schema("", fn(_) {
-            serializer.doc() |> openapi_type.to_schema()
-          })
+          |> openapi.parameter.set_schema(
+            serializer.doc() |> openapi_type.to_schema(),
+          )
         },
       )
     })
@@ -673,11 +673,11 @@ pub fn pagination(
             openapi.ParameterInQuery,
             fn(parameter) {
               parameter
-              |> openapi.parameter.schema("", fn(_) {
+              |> openapi.parameter.set_schema(
                 openapi_type.integer()
                 |> openapi_type.default(spec.integer(default_page))
-                |> openapi_type.to_schema()
-              })
+                |> openapi_type.to_schema(),
+              )
             },
           )
           |> openapi.operation.parameter(
@@ -685,11 +685,11 @@ pub fn pagination(
             openapi.ParameterInQuery,
             fn(parameter) {
               parameter
-              |> openapi.parameter.schema("", fn(_) {
+              |> openapi.parameter.set_schema(
                 openapi_type.integer()
                 |> openapi_type.default(spec.integer(default_per_page))
-                |> openapi_type.to_schema()
-              })
+                |> openapi_type.to_schema(),
+              )
             },
           )
         }
@@ -705,14 +705,14 @@ pub fn pagination(
             openapi.ParameterInQuery,
             fn(parameter) {
               parameter
-              |> openapi.parameter.schema("", fn(_) {
+              |> openapi.parameter.set_schema(
                 after_serializer.doc()
                 |> openapi_type.default(serialize.encode(
                   default_after,
                   after_serializer,
                 ))
-                |> openapi_type.to_schema()
-              })
+                |> openapi_type.to_schema(),
+              )
             },
           )
           |> openapi.operation.parameter(
@@ -720,11 +720,11 @@ pub fn pagination(
             openapi.ParameterInQuery,
             fn(parameter) {
               parameter
-              |> openapi.parameter.schema("", fn(_) {
+              |> openapi.parameter.set_schema(
                 openapi_type.integer()
                 |> openapi_type.default(spec.integer(default_per_page))
-                |> openapi_type.to_schema()
-              })
+                |> openapi_type.to_schema(),
+              )
             },
           )
         }
@@ -740,14 +740,14 @@ pub fn pagination(
             openapi.ParameterInQuery,
             fn(parameter) {
               parameter
-              |> openapi.parameter.schema("", fn(_) {
+              |> openapi.parameter.set_schema(
                 before_serializer.doc()
                 |> openapi_type.default(serialize.encode(
                   default_before,
                   before_serializer,
                 ))
-                |> openapi_type.to_schema()
-              })
+                |> openapi_type.to_schema(),
+              )
             },
           )
           |> openapi.operation.parameter(
@@ -755,11 +755,11 @@ pub fn pagination(
             openapi.ParameterInQuery,
             fn(parameter) {
               parameter
-              |> openapi.parameter.schema("", fn(_) {
+              |> openapi.parameter.set_schema(
                 openapi_type.integer()
                 |> openapi_type.default(spec.integer(default_per_page))
-                |> openapi_type.to_schema()
-              })
+                |> openapi_type.to_schema(),
+              )
             },
           )
         }

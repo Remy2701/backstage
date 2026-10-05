@@ -142,9 +142,9 @@ pub fn json_response_internal(
         |> openapi.response.description(summary)
         |> openapi.response.content("application/json", fn(media) {
           media
-          |> openapi.media_type.schema("", fn(_) {
-            encoder.doc() |> openapi_type.to_schema()
-          })
+          |> openapi.media_type.set_schema(
+            encoder.doc() |> openapi_type.to_schema(),
+          )
         })
       })
     })
