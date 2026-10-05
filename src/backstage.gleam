@@ -101,6 +101,20 @@ pub fn summary(spec: RouteSpecBuilder, summary: String) -> RouteSpecBuilder {
   })
 }
 
+/// Set the [summary] of the route.
+pub fn description(
+  spec: RouteSpecBuilder,
+  description: String,
+) -> RouteSpecBuilder {
+  backstage_core.RouteSpecBuilder(doc: fn(doc) {
+    doc
+    |> spec.doc()
+    |> backstage_core.modify_operation(fn(operation) {
+      operation |> openapi.operation.description(description)
+    })
+  })
+}
+
 /// Set the [tag] of the route.
 pub fn tag(spec: RouteSpecBuilder, tag: String) -> RouteSpecBuilder {
   backstage_core.RouteSpecBuilder(doc: fn(doc) {
