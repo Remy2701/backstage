@@ -496,7 +496,7 @@ fn path_parameter_internal(
         |> list.index_map(pair.new)
 
       use segment_index <- result.try(
-        list.key_find(path_segments, ":" <> name)
+        list.key_find(path_segments, "{" <> name <> "}")
         |> result.map_error(fn(_) {
           bad_request.apply("Failed to find path segment for '" <> name <> "'")
         }),
