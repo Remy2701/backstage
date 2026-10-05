@@ -225,6 +225,8 @@ pub type Schema {
     required: List(String),
     pattern: Option(String),
     examples: List(spec.Spec),
+    minimum: Option(spec.Spec),
+    maximum: Option(spec.Spec),
   )
 }
 
@@ -239,6 +241,8 @@ fn schema_create(type_: String) -> Schema {
     required: [],
     pattern: None,
     examples: [],
+    minimum: None,
+    maximum: None,
   )
 }
 
@@ -276,6 +280,16 @@ fn schema_to_spec(schema: Schema) -> spec.Spec {
       schema.examples
         |> spec.none_if_empty
         |> spec.nullable(spec.array),
+    ),
+    #(
+      "minimum",
+      schema.minimum
+        |> spec.nullable(function.identity),
+    ),
+    #(
+      "maximum",
+      schema.maximum
+        |> spec.nullable(function.identity),
     ),
   ])
 }

@@ -495,6 +495,20 @@ pub fn with_example(serializer: Serializer(a), example: Spec) -> Serializer(a) {
   })
 }
 
+/// Add an minimum value to the openapi specification of the given serializer.
+pub fn with_min(serializer: Serializer(a), min: Spec) -> Serializer(a) {
+  Serializer(..serializer, doc: fn() {
+    serializer.doc() |> openapi_type.min(min)
+  })
+}
+
+/// Add an maximum value to the openapi specification of the given serializer.
+pub fn with_max(serializer: Serializer(a), max: Spec) -> Serializer(a) {
+  Serializer(..serializer, doc: fn() {
+    serializer.doc() |> openapi_type.max(max)
+  })
+}
+
 /// Add a pattern to the openapi specification of the given serializer.
 pub fn with_pattern(
   serializer: Serializer(a),

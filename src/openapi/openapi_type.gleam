@@ -13,7 +13,13 @@ pub type OpenAPIType {
     enum: List(String),
   )
   Integer(format: Option(String), default: Option(Spec), examples: List(Spec))
-  Number(format: Option(String), default: Option(Spec), examples: List(Spec))
+  Number(
+    format: Option(String),
+    default: Option(Spec),
+    examples: List(Spec),
+    min: Option(Spec),
+    max: Option(Spec),
+  )
   Boolean(format: Option(String), default: Option(Spec), examples: List(Spec))
   Array(
     format: Option(String),
@@ -86,6 +92,22 @@ pub fn pattern(type_: OpenAPIType, pattern p: String) -> OpenAPIType {
   }
 }
 
+pub fn min(type_: OpenAPIType, min m: Spec) -> OpenAPIType {
+  case type_ {
+    Number(..) -> Number(..type_, min: Some(m))
+    Option(of) -> Option(min(of, m))
+    _ -> type_
+  }
+}
+
+pub fn max(type_: OpenAPIType, max m: Spec) -> OpenAPIType {
+  case type_ {
+    Number(..) -> Number(..type_, max: Some(m))
+    Option(of) -> Option(max(of, m))
+    _ -> type_
+  }
+}
+
 /// A string type with no specific format, default, pattern, examples, or enum.
 pub fn string() -> OpenAPIType {
   String(format: None, default: None, pattern: None, examples: [], enum: [])
@@ -109,7 +131,7 @@ pub fn integer() -> OpenAPIType {
 
 /// A number type with no specific format, default, or examples.
 pub fn number() -> OpenAPIType {
-  Number(format: None, default: None, examples: [])
+  Number(format: None, default: None, examples: [], min: None, max: None)
 }
 
 /// A boolean type with no specific format, default, or examples.
@@ -225,5 +247,13 @@ pub fn to_schema(type_: OpenAPIType) -> openapi.Schema {
       _ -> []
     },
     examples: examples_of(type_),
+    minimum: case type_ {
+      Number(min:, ..) -> min
+      _ -> None
+    },
+    maximum: case type_ {
+      Number(max:, ..) -> max
+      _ -> None
+    },
   )
 }

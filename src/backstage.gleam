@@ -666,7 +666,12 @@ pub fn pagination(
     scope
     |> backstage_core.modify_operation(fn(operation) {
       case config {
-        pagination.SimplePaginationConfig(default_page:, default_per_page:, ..) -> {
+        pagination.SimplePaginationConfig(
+          default_page:,
+          default_per_page:,
+          max_per_page:,
+          ..,
+        ) -> {
           operation
           |> openapi.operation.parameter(
             "page",
@@ -688,6 +693,8 @@ pub fn pagination(
               |> openapi.parameter.set_schema(
                 openapi_type.integer()
                 |> openapi_type.default(spec.integer(default_per_page))
+                |> openapi_type.min(spec.integer(0))
+                |> openapi_type.max(spec.integer(max_per_page))
                 |> openapi_type.to_schema(),
               )
             },
@@ -697,6 +704,7 @@ pub fn pagination(
           default_after:,
           after_serializer:,
           default_per_page:,
+          max_per_page:,
           ..,
         ) -> {
           operation
@@ -723,6 +731,8 @@ pub fn pagination(
               |> openapi.parameter.set_schema(
                 openapi_type.integer()
                 |> openapi_type.default(spec.integer(default_per_page))
+                |> openapi_type.min(spec.integer(0))
+                |> openapi_type.max(spec.integer(max_per_page))
                 |> openapi_type.to_schema(),
               )
             },
@@ -732,6 +742,7 @@ pub fn pagination(
           default_before:,
           before_serializer:,
           default_per_page:,
+          max_per_page:,
           ..,
         ) -> {
           operation
@@ -758,6 +769,8 @@ pub fn pagination(
               |> openapi.parameter.set_schema(
                 openapi_type.integer()
                 |> openapi_type.default(spec.integer(default_per_page))
+                |> openapi_type.min(spec.integer(0))
+                |> openapi_type.max(spec.integer(max_per_page))
                 |> openapi_type.to_schema(),
               )
             },
