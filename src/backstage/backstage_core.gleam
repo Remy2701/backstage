@@ -84,10 +84,12 @@ pub fn openapi_scope_path(scope: OpenAPIScope) -> String {
 //                                          Route Spec                                           //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
+/// The type representing a builder for a route specification.
 pub type RouteSpecBuilder {
   RouteSpecBuilder(doc: fn(OpenAPI) -> OpenAPIScope)
 }
 
+/// Modify the route specification using the given transformation function.
 pub fn modify_spec(
   spec: RouteSpecBuilder,
   transform: fn(OpenAPIScope) -> OpenAPIScope,
@@ -95,6 +97,7 @@ pub fn modify_spec(
   RouteSpecBuilder(doc: fn(doc) { doc |> spec.doc() |> transform() })
 }
 
+/// The type representing a route specification.
 pub type RouteSpec(data) {
   RouteSpec(
     doc: fn(OpenAPI) -> OpenAPIScope,
@@ -102,6 +105,15 @@ pub type RouteSpec(data) {
   )
 }
 
+/// The type representing the capability of a route. The capability provides some resources that 
+/// are retrieved from the request, it holds a get function which is used to obtain the resource.
+/// 
+/// Example
+/// ```gleam
+/// let capability = .. // Get some capability object
+/// 
+/// use resource <- capability.get(request)
+/// ```
 pub type RouteCapability(data, object) {
   RouteCapability(
     get: fn(Request, fn(data) -> Result(object, WispResponse)) ->
@@ -109,14 +121,12 @@ pub type RouteCapability(data, object) {
   )
 }
 
+/// Create a capability which provides a resource. This function handles forwarding the request 
+/// to the next handler.
 pub fn capability(
   get: fn(Request) -> Result(data, WispResponse),
 ) -> RouteCapability(data, object) {
-  RouteCapability(
-    get: fn(request, next: fn(data) -> Result(object, WispResponse)) {
-      result.try(get(request), next)
-    },
-  )
+  RouteCapability(get: fn(request, next) { result.try(get(request), next) })
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -172,6 +182,14 @@ pub type Request =
 pub type Connection {
   MistConnection(mist.Connection)
   WispConnection(wisp.Connection)
+}
+
+pub fn from_wisp_request(request: wisp.Request) -> Request {
+  request.map(request, WispConnection)
+}
+
+pub fn from_mist_request(request: request.Request(mist.Connection)) -> Request {
+  request.map(request, MistConnection)
 }
 
 //-----------------------------------------------------------------------------------------------//
@@ -356,36 +374,6 @@ pub fn ok() -> WispResponse {
 /// Return a 201 Created response.
 pub fn created() -> WispResponse {
   wisp.response(status_code.created)
-}
-
-//-----------------------------------------------------------------------------------------------//
-//                                             Query                                             //
-//-----------------------------------------------------------------------------------------------//
-
-/// Decode the given value using the provided decoder and pass it to the next function.
-/// This is useful for handling query parameters in a type-safe manner.
-/// 
-/// ```gleam
-/// ["user", id] -> {
-///   use id <- backstage.decode_param(id, identifier.decoder())
-///   ...
-/// }
-/// ```
-pub fn decode_param(
-  value: String,
-  decoder: decode.Decoder(a),
-  next: fn(a) -> WispResponse,
-) -> WispResponse {
-  use value <- try(
-    decode.run(dynamic.string(value), decoder)
-    |> result.map_error(fn(e) {
-      bad_request(
-        "Failed to decode query: "
-        <> string.join(list.map(e, fn(e) { "expected " <> e.expected }), ", "),
-      )
-    }),
-  )
-  next(value)
 }
 
 //-----------------------------------------------------------------------------------------------//
@@ -577,6 +565,7 @@ pub fn get_multipart_body(
   })
 }
 
+/// Convert a decoder error into a human-readable string.
 fn decoder_error_to_string(error: decode.DecodeError) -> String {
   case error.expected, error.found {
     "Field", "Nothing" -> "Missing field " <> string.join(error.path, ".")
