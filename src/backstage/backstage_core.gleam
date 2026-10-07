@@ -86,7 +86,11 @@ pub fn openapi_scope_path(scope: OpenAPIScope) -> String {
 
 /// The type representing a builder for a route specification.
 pub type RouteSpecBuilder {
-  RouteSpecBuilder(doc: fn(OpenAPI) -> OpenAPIScope)
+  RouteSpecBuilder(
+    path: String,
+    method: http.Method,
+    doc: fn(OpenAPI) -> OpenAPIScope,
+  )
 }
 
 /// Modify the route specification using the given transformation function.
@@ -94,14 +98,16 @@ pub fn modify_spec(
   spec: RouteSpecBuilder,
   transform: fn(OpenAPIScope) -> OpenAPIScope,
 ) -> RouteSpecBuilder {
-  RouteSpecBuilder(doc: fn(doc) { doc |> spec.doc() |> transform() })
+  RouteSpecBuilder(..spec, doc: fn(doc) { doc |> spec.doc() |> transform() })
 }
 
 /// The type representing a route specification.
-pub type RouteSpec(data) {
+pub type RouteSpec {
   RouteSpec(
+    path: String,
+    method: http.Method,
     doc: fn(OpenAPI) -> OpenAPIScope,
-    build: fn(Request) -> Result(data, WispResponse),
+    route: fn(Request) -> WispResponse,
   )
 }
 
@@ -140,8 +146,8 @@ pub fn json_response_internal(
   encoder: encode.Encoder(response),
   summary: String,
   response: fn(fn(response) -> WispResponse) -> data,
-  next: fn(RouteSpecBuilder, RouteCapability(data, object)) -> RouteSpec(object),
-) -> RouteSpec(object) {
+  next: fn(RouteSpecBuilder, RouteCapability(data, object)) -> RouteSpec,
+) -> RouteSpec {
   spec
   |> modify_spec(fn(scope) {
     scope
