@@ -145,7 +145,10 @@ pub fn json_response_internal(
   code: Int,
   encoder: encode.Encoder(response),
   summary: String,
-  response: fn(fn(response) -> WispResponse) -> data,
+  response: fn(
+    fn(response) -> WispResponse,
+    fn(response, Bool, fn() -> WispResponse) -> WispResponse,
+  ) -> data,
   next: fn(RouteSpecBuilder, RouteCapability(data, object)) -> RouteSpec,
 ) -> RouteSpec {
   spec
@@ -167,9 +170,14 @@ pub fn json_response_internal(
   })
   |> next(
     capability(fn(_) {
-      response(fn(response) {
+      let apply = fn(response) {
         wisp.response(code)
         |> json_body(encode.encode_json(response, encoder))
+      }
+
+      response(apply, fn(response, flag, next) {
+        use <- bool.guard(flag, return: apply(response))
+        next()
       })
       |> Ok()
     }),

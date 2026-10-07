@@ -280,7 +280,10 @@ pub fn multipart_body(
 
 /// The type representing a JSON response from the server
 pub type JsonResponse(response) {
-  JsonResponse(apply: fn(response) -> WispResponse)
+  JsonResponse(
+    apply: fn(response) -> WispResponse,
+    apply_when: fn(response, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn json_response(
@@ -302,7 +305,10 @@ pub fn json_response(
 }
 
 pub type BadRequestResponse {
-  BadRequestResponse(apply: fn(String) -> WispResponse)
+  BadRequestResponse(
+    apply: fn(String) -> WispResponse,
+    apply_when: fn(String, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn bad_request(
@@ -326,7 +332,10 @@ pub fn bad_request(
 }
 
 pub type UnauthorizedResponse {
-  UnauthorizedResponse(apply: fn(String) -> WispResponse)
+  UnauthorizedResponse(
+    apply: fn(String) -> WispResponse,
+    apply_when: fn(String, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn unauthorized(
@@ -350,7 +359,10 @@ pub fn unauthorized(
 }
 
 pub type NotFoundResponse {
-  NotFoundResponse(apply: fn(String) -> WispResponse)
+  NotFoundResponse(
+    apply: fn(String) -> WispResponse,
+    apply_when: fn(String, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn not_found(
@@ -371,7 +383,10 @@ pub fn not_found(
 }
 
 pub type ConflictResponse {
-  ConflictResponse(apply: fn(String) -> WispResponse)
+  ConflictResponse(
+    apply: fn(String) -> WispResponse,
+    apply_when: fn(String, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn conflict(
@@ -392,7 +407,10 @@ pub fn conflict(
 }
 
 pub type InternalServerErrorResponse {
-  InternalServerErrorResponse(apply: fn(String) -> WispResponse)
+  InternalServerErrorResponse(
+    apply: fn(String) -> WispResponse,
+    apply_when: fn(String, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn internal_server_error(
@@ -420,7 +438,10 @@ pub fn internal_server_error(
 }
 
 pub type ServiceUnavailableResponse {
-  ServiceUnavailableResponse(apply: fn(String) -> WispResponse)
+  ServiceUnavailableResponse(
+    apply: fn(String) -> WispResponse,
+    apply_when: fn(String, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn service_unavailable(
@@ -446,7 +467,10 @@ pub fn service_unavailable(
 }
 
 pub type TimeoutResponse {
-  TimeoutResponse(apply: fn(String) -> WispResponse)
+  TimeoutResponse(
+    apply: fn(String) -> WispResponse,
+    apply_when: fn(String, Bool, fn() -> WispResponse) -> WispResponse,
+  )
 }
 
 pub fn timeout(
@@ -794,6 +818,8 @@ pub fn pagination(
 //                                            Runtime                                            //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
+/// Verify if the given request segments match the route's segments.
+/// Parameters like '{id}' will be treated as wildcards.
 pub fn match_path_segment(
   request_segments: List(String),
   route_segments: List(String),
@@ -815,6 +841,7 @@ pub fn match_path_segment(
   })
 }
 
+/// Build a route specification from the given builder functions.
 pub fn build(
   spec: RouteSpecBuilder,
   builder: fn(Request) -> Result(object, WispResponse),
@@ -831,6 +858,7 @@ pub fn build(
   )
 }
 
+/// Route the request to the corresponding route based on the given specs.
 pub fn router(
   openapi: openapi.OpenAPI,
   specs: List(RouteSpec),
