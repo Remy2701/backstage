@@ -27,5 +27,22 @@ pub fn match_path_segment_test_suite() -> Suite {
       )
       |> expect.to_be_equal(True)
     }),
+    Test("with_middle_parameter", fn() {
+      backstage.match_path_segment(
+        request.path_segments(simulate.browser_request(
+          http.Post,
+          "/user/123/username",
+        )),
+        uri.path_segments("/user/{id}/username"),
+      )
+      |> expect.to_be_equal(True)
+    }),
+    Test("incomplete", fn() {
+      backstage.match_path_segment(
+        request.path_segments(simulate.browser_request(http.Get, "/user/123")),
+        uri.path_segments("/user/{id}/username"),
+      )
+      |> expect.to_be_equal(False)
+    }),
   ])
 }
