@@ -1,4 +1,5 @@
 import backstage/backstage_core
+import expect_plus
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
 import gleam/http
@@ -39,16 +40,10 @@ pub fn get_content_type_test_suite() -> Suite {
       |> simulate.multipart_body([], [])
       |> backstage_core.from_wisp_request()
       |> backstage_core.get_content_type()
-      |> expect.to_be_ok_then(fn(content_type) {
-        case content_type {
-          "multipart/form-data; boundary=" <> _ -> garanti.Pass
-          _ ->
-            garanti.Fail("Unexpected content type: " <> content_type, [
-              garanti.Actual(content_type),
-              garanti.Expected("multipart/form-data; boundary="),
-            ])
-        }
-      })
+      |> expect.to_be_ok_then(expect_plus.start_with(
+        _,
+        "multipart/form-data; boundary=",
+      ))
     }),
   ])
 }
