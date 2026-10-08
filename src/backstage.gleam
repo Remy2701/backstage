@@ -215,16 +215,11 @@ pub fn bearer_auth(
 //                                             Body                                              //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-/// The type representing the body of a request
-pub type Body(body) {
-  Body(value: body)
-}
-
 /// Add a json body with the given decoder to the route
 pub fn json_body(
   spec: RouteSpecBuilder,
   decoder: decode.Decoder(body),
-  next: fn(RouteSpecBuilder, RouteCapability(Body(body), object)) -> RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(body, object)) -> RouteSpec,
 ) -> RouteSpec {
   spec
   |> backstage_core.modify_spec(fn(scope) {
@@ -237,7 +232,6 @@ pub fn json_body(
   |> next(
     backstage_core.capability(fn(request) {
       backstage_core.get_json_body(request, decoder.decoder)
-      |> result.map(Body)
     }),
   )
 }
@@ -246,7 +240,7 @@ pub fn json_body(
 pub fn multipart_body(
   spec: RouteSpecBuilder,
   decoder: decode.Decoder(body),
-  next: fn(RouteSpecBuilder, RouteCapability(Body(body), object)) -> RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(body, object)) -> RouteSpec,
 ) -> RouteSpec {
   spec
   |> backstage_core.modify_spec(fn(scope) {
@@ -262,7 +256,6 @@ pub fn multipart_body(
   |> next(
     backstage_core.capability(fn(request) {
       backstage_core.get_multipart_body(request, decoder.decoder)
-      |> result.map(Body)
     }),
   )
 }
