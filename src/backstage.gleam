@@ -480,17 +480,12 @@ pub fn timeout(
 //                                          Parameters                                           //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-pub type PathParameter(a) {
-  PathParameter(value: a)
-}
-
 fn path_parameter_internal(
   spec: RouteSpecBuilder,
   name: String,
   decoder: decode.Decoder(a),
   is_json: Bool,
-  next: fn(RouteSpecBuilder, RouteCapability(PathParameter(a), object)) ->
-    RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec,
 ) -> RouteSpec {
   use spec, bad_request <- bad_request(spec)
 
@@ -547,7 +542,7 @@ fn path_parameter_internal(
           })
       })
 
-      next(PathParameter(value))
+      next(value)
     }),
   )
 }
@@ -556,8 +551,7 @@ pub fn path_parameter(
   spec: RouteSpecBuilder,
   name: String,
   decoder: decode.Decoder(a),
-  next: fn(RouteSpecBuilder, RouteCapability(PathParameter(a), object)) ->
-    RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec,
 ) -> RouteSpec {
   path_parameter_internal(spec, name, decoder, False, next)
 }
@@ -566,8 +560,7 @@ pub fn json_path_parameter(
   spec: RouteSpecBuilder,
   name: String,
   decoder: decode.Decoder(a),
-  next: fn(RouteSpecBuilder, RouteCapability(PathParameter(a), object)) ->
-    RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec,
 ) -> RouteSpec {
   path_parameter_internal(spec, name, decoder, True, next)
 }
@@ -576,18 +569,13 @@ pub fn json_path_parameter(
 //                                        Query Parameter                                        //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-pub type QueryParameter(a) {
-  QueryParameter(value: a)
-}
-
 fn query_parameter_internal(
   spec: RouteSpecBuilder,
   name: String,
   serializer: serialize.Serializer(a),
   default: option.Option(a),
   is_json: Bool,
-  next: fn(RouteSpecBuilder, RouteCapability(QueryParameter(a), object)) ->
-    RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec,
 ) -> RouteSpec {
   use spec, bad_request <- bad_request(spec)
 
@@ -633,7 +621,7 @@ fn query_parameter_internal(
         }),
       )
 
-      next(QueryParameter(data))
+      next(data)
     }),
   )
 }
@@ -643,8 +631,7 @@ pub fn query_parameter(
   name: String,
   serializer: serialize.Serializer(a),
   default: option.Option(a),
-  next: fn(RouteSpecBuilder, RouteCapability(QueryParameter(a), object)) ->
-    RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec,
 ) -> RouteSpec {
   query_parameter_internal(spec, name, serializer, default, False, next)
 }
@@ -654,8 +641,7 @@ pub fn json_query_parameter(
   name: String,
   serializer: serialize.Serializer(a),
   default: option.Option(a),
-  next: fn(RouteSpecBuilder, RouteCapability(QueryParameter(a), object)) ->
-    RouteSpec,
+  next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec,
 ) -> RouteSpec {
   query_parameter_internal(spec, name, serializer, default, True, next)
 }
