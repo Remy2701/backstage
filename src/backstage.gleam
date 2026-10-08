@@ -118,13 +118,10 @@ pub fn patch(route: String) -> RouteSpecBuilder {
 
 /// Set the [summary] of the route.
 pub fn summary(spec: RouteSpecBuilder, summary: String) -> RouteSpecBuilder {
-  backstage_core.RouteSpecBuilder(..spec, doc: fn(doc) {
-    doc
-    |> spec.doc()
-    |> backstage_core.modify_operation(fn(operation) {
-      operation |> openapi.operation.summary(summary)
-    })
-  })
+  use doc <- backstage_core.modify_spec(spec)
+  use operation <- backstage_core.modify_operation(doc)
+
+  openapi.operation.summary(operation, summary)
 }
 
 /// Set the [summary] of the route.
@@ -132,24 +129,18 @@ pub fn description(
   spec: RouteSpecBuilder,
   description: String,
 ) -> RouteSpecBuilder {
-  backstage_core.RouteSpecBuilder(..spec, doc: fn(doc) {
-    doc
-    |> spec.doc()
-    |> backstage_core.modify_operation(fn(operation) {
-      operation |> openapi.operation.description(description)
-    })
-  })
+  use doc <- backstage_core.modify_spec(spec)
+  use operation <- backstage_core.modify_operation(doc)
+
+  openapi.operation.description(operation, description)
 }
 
 /// Set the [tag] of the route.
 pub fn tag(spec: RouteSpecBuilder, tag: String) -> RouteSpecBuilder {
-  backstage_core.RouteSpecBuilder(..spec, doc: fn(doc) {
-    doc
-    |> spec.doc()
-    |> backstage_core.modify_operation(fn(operation) {
-      operation |> openapi.operation.tag(tag)
-    })
-  })
+  use doc <- backstage_core.modify_spec(spec)
+  use operation <- backstage_core.modify_operation(doc)
+
+  openapi.operation.tag(operation, tag)
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -200,26 +191,22 @@ pub fn bearer_auth(
 ) -> RouteSpec {
   use spec, unauthorized <- unauthorized(spec)
 
-  spec
-  |> backstage_core.modify_spec(fn(scope) {
+  backstage_core.modify_spec(spec, fn(scope) {
     scope
-    |> backstage_core.modify_operation(fn(operation) {
-      operation
-      |> openapi.operation.security(name)
-    })
+    |> backstage_core.modify_operation(openapi.operation.security(_, name))
     |> backstage_core.modify_doc(fn(doc) {
-      openapi.components.security_scheme(doc, name, "http", fn(security) {
-        security
-        |> openapi.security_scheme.scheme("bearer")
-        |> openapi.security_scheme.bearer_format("JWT")
-      })
+      use security <- openapi.components.security_scheme(doc, name, "http")
+
+      security
+      |> openapi.security_scheme.scheme("bearer")
+      |> openapi.security_scheme.bearer_format("JWT")
     })
   })
   |> next(
-    backstage_core.RouteCapability(get: fn(request, next) {
+    backstage_core.capability(fn(request) {
       use unauthorized <- unauthorized.get(request)
       use token <- result.try(require_authorization(request, unauthorized))
-      next(BearerAuth(token: token))
+      Ok(BearerAuth(token: token))
     }),
   )
 }
@@ -241,19 +228,11 @@ pub fn json_body(
 ) -> RouteSpec {
   spec
   |> backstage_core.modify_spec(fn(scope) {
-    scope
-    |> backstage_core.modify_operation(fn(operation) {
-      operation
-      |> openapi.operation.request_body(fn(request_body) {
-        request_body
-        |> openapi.request_body.content("application/json", fn(media) {
-          media
-          |> openapi.media_type.set_schema(
-            decoder.doc() |> openapi_type.to_schema(),
-          )
-        })
-      })
-    })
+    use operation <- backstage_core.modify_operation(scope)
+    use request_body <- openapi.operation.request_body(operation)
+    use media <- openapi.request_body.content(request_body, "application/json")
+
+    openapi.media_type.set_schema(media, openapi_type.to_schema(decoder.doc()))
   })
   |> next(
     backstage_core.capability(fn(request) {
@@ -271,19 +250,14 @@ pub fn multipart_body(
 ) -> RouteSpec {
   spec
   |> backstage_core.modify_spec(fn(scope) {
-    scope
-    |> backstage_core.modify_operation(fn(operation) {
-      operation
-      |> openapi.operation.request_body(fn(request_body) {
-        request_body
-        |> openapi.request_body.content("multipart/form-data", fn(media) {
-          media
-          |> openapi.media_type.set_schema(
-            decoder.doc() |> openapi_type.to_schema(),
-          )
-        })
-      })
-    })
+    use operation <- backstage_core.modify_operation(scope)
+    use request_body <- openapi.operation.request_body(operation)
+    use media <- openapi.request_body.content(
+      request_body,
+      "multipart/form-data",
+    )
+
+    openapi.media_type.set_schema(media, openapi_type.to_schema(decoder.doc()))
   })
   |> next(
     backstage_core.capability(fn(request) {
@@ -529,21 +503,16 @@ fn path_parameter_internal(
 
   spec
   |> backstage_core.modify_spec(fn(scope) {
-    scope
-    |> backstage_core.modify_operation(fn(operation) {
-      operation
-      |> openapi.operation.parameter(
-        name,
-        openapi.ParameterInPath,
-        fn(parameter) {
-          parameter
-          |> openapi.parameter.required(True)
-          |> openapi.parameter.set_schema(
-            decoder.doc() |> openapi_type.to_schema(),
-          )
-        },
-      )
-    })
+    use operation <- backstage_core.modify_operation(scope)
+    use parameter <- openapi.operation.parameter(
+      operation,
+      name,
+      openapi.ParameterInPath,
+    )
+
+    parameter
+    |> openapi.parameter.required(True)
+    |> openapi.parameter.set_schema(openapi_type.to_schema(decoder.doc()))
   })
   |> next(
     backstage_core.RouteCapability(fn(request, next) {
@@ -631,21 +600,16 @@ fn query_parameter_internal(
 
   spec
   |> backstage_core.modify_spec(fn(scope) {
-    scope
-    |> backstage_core.modify_operation(fn(operation) {
-      operation
-      |> openapi.operation.parameter(
-        name,
-        openapi.ParameterInQuery,
-        fn(parameter) {
-          parameter
-          |> openapi.parameter.required(option.is_none(default))
-          |> openapi.parameter.set_schema(
-            serializer.doc() |> openapi_type.to_schema(),
-          )
-        },
-      )
-    })
+    use operation <- backstage_core.modify_operation(scope)
+    use parameter <- openapi.operation.parameter(
+      operation,
+      name,
+      openapi.ParameterInQuery,
+    )
+
+    parameter
+    |> openapi.parameter.required(option.is_none(default))
+    |> openapi.parameter.set_schema(openapi_type.to_schema(serializer.doc()))
   })
   |> next(
     backstage_core.RouteCapability(fn(request, next) {
@@ -710,121 +674,119 @@ pub fn pagination(
 ) -> RouteSpec {
   spec
   |> backstage_core.modify_spec(fn(scope) {
-    scope
-    |> backstage_core.modify_operation(fn(operation) {
-      case config {
-        pagination.SimplePaginationConfig(
-          default_page:,
-          default_per_page:,
-          max_per_page:,
-          ..,
-        ) -> {
-          operation
-          |> openapi.operation.parameter(
-            "page",
-            openapi.ParameterInQuery,
-            fn(parameter) {
-              parameter
-              |> openapi.parameter.set_schema(
-                openapi_type.integer()
-                |> openapi_type.default(spec.integer(default_page))
-                |> openapi_type.to_schema(),
-              )
-            },
-          )
-          |> openapi.operation.parameter(
-            "per_page",
-            openapi.ParameterInQuery,
-            fn(parameter) {
-              parameter
-              |> openapi.parameter.set_schema(
-                openapi_type.integer()
-                |> openapi_type.default(spec.integer(default_per_page))
-                |> openapi_type.min(spec.integer(0))
-                |> openapi_type.max(spec.integer(max_per_page))
-                |> openapi_type.to_schema(),
-              )
-            },
-          )
-        }
-        pagination.AfterPaginationConfig(
-          default_after:,
-          after_serializer:,
-          default_per_page:,
-          max_per_page:,
-          ..,
-        ) -> {
-          operation
-          |> openapi.operation.parameter(
-            "after",
-            openapi.ParameterInQuery,
-            fn(parameter) {
-              parameter
-              |> openapi.parameter.set_schema(
-                after_serializer.doc()
-                |> openapi_type.default(serialize.encode(
-                  default_after,
-                  after_serializer,
-                ))
-                |> openapi_type.to_schema(),
-              )
-            },
-          )
-          |> openapi.operation.parameter(
-            "per_page",
-            openapi.ParameterInQuery,
-            fn(parameter) {
-              parameter
-              |> openapi.parameter.set_schema(
-                openapi_type.integer()
-                |> openapi_type.default(spec.integer(default_per_page))
-                |> openapi_type.min(spec.integer(0))
-                |> openapi_type.max(spec.integer(max_per_page))
-                |> openapi_type.to_schema(),
-              )
-            },
-          )
-        }
-        pagination.BeforePaginationConfig(
-          default_before:,
-          before_serializer:,
-          default_per_page:,
-          max_per_page:,
-          ..,
-        ) -> {
-          operation
-          |> openapi.operation.parameter(
-            "before",
-            openapi.ParameterInQuery,
-            fn(parameter) {
-              parameter
-              |> openapi.parameter.set_schema(
-                before_serializer.doc()
-                |> openapi_type.default(serialize.encode(
-                  default_before,
-                  before_serializer,
-                ))
-                |> openapi_type.to_schema(),
-              )
-            },
-          )
-          |> openapi.operation.parameter(
-            "per_page",
-            openapi.ParameterInQuery,
-            fn(parameter) {
-              parameter
-              |> openapi.parameter.set_schema(
-                openapi_type.integer()
-                |> openapi_type.default(spec.integer(default_per_page))
-                |> openapi_type.min(spec.integer(0))
-                |> openapi_type.max(spec.integer(max_per_page))
-                |> openapi_type.to_schema(),
-              )
-            },
-          )
-        }
+    use operation <- backstage_core.modify_operation(scope)
+    case config {
+      pagination.SimplePaginationConfig(
+        default_page:,
+        default_per_page:,
+        max_per_page:,
+        ..,
+      ) -> {
+        operation
+        |> openapi.operation.parameter(
+          "page",
+          openapi.ParameterInQuery,
+          fn(parameter) {
+            parameter
+            |> openapi.parameter.set_schema(
+              openapi_type.integer()
+              |> openapi_type.default(spec.integer(default_page))
+              |> openapi_type.to_schema(),
+            )
+          },
+        )
+        |> openapi.operation.parameter(
+          "per_page",
+          openapi.ParameterInQuery,
+          fn(parameter) {
+            parameter
+            |> openapi.parameter.set_schema(
+              openapi_type.integer()
+              |> openapi_type.default(spec.integer(default_per_page))
+              |> openapi_type.min(spec.integer(0))
+              |> openapi_type.max(spec.integer(max_per_page))
+              |> openapi_type.to_schema(),
+            )
+          },
+        )
       }
-    })
+      pagination.AfterPaginationConfig(
+        default_after:,
+        after_serializer:,
+        default_per_page:,
+        max_per_page:,
+        ..,
+      ) -> {
+        operation
+        |> openapi.operation.parameter(
+          "after",
+          openapi.ParameterInQuery,
+          fn(parameter) {
+            parameter
+            |> openapi.parameter.set_schema(
+              after_serializer.doc()
+              |> openapi_type.default(serialize.encode(
+                default_after,
+                after_serializer,
+              ))
+              |> openapi_type.to_schema(),
+            )
+          },
+        )
+        |> openapi.operation.parameter(
+          "per_page",
+          openapi.ParameterInQuery,
+          fn(parameter) {
+            parameter
+            |> openapi.parameter.set_schema(
+              openapi_type.integer()
+              |> openapi_type.default(spec.integer(default_per_page))
+              |> openapi_type.min(spec.integer(0))
+              |> openapi_type.max(spec.integer(max_per_page))
+              |> openapi_type.to_schema(),
+            )
+          },
+        )
+      }
+      pagination.BeforePaginationConfig(
+        default_before:,
+        before_serializer:,
+        default_per_page:,
+        max_per_page:,
+        ..,
+      ) -> {
+        operation
+        |> openapi.operation.parameter(
+          "before",
+          openapi.ParameterInQuery,
+          fn(parameter) {
+            parameter
+            |> openapi.parameter.set_schema(
+              before_serializer.doc()
+              |> openapi_type.default(serialize.encode(
+                default_before,
+                before_serializer,
+              ))
+              |> openapi_type.to_schema(),
+            )
+          },
+        )
+        |> openapi.operation.parameter(
+          "per_page",
+          openapi.ParameterInQuery,
+          fn(parameter) {
+            parameter
+            |> openapi.parameter.set_schema(
+              openapi_type.integer()
+              |> openapi_type.default(spec.integer(default_per_page))
+              |> openapi_type.min(spec.integer(0))
+              |> openapi_type.max(spec.integer(max_per_page))
+              |> openapi_type.to_schema(),
+            )
+          },
+        )
+      }
+    }
   })
   |> next(
     backstage_core.capability(fn(request) {
