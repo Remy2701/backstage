@@ -1,7 +1,6 @@
 import backstage
 import backstage/backstage_core
 import backstage/pagination
-import dynamic/encode
 import dynamic/serialize
 import garanti.{type Suite, Suite, Test}
 import gleam/http
@@ -227,9 +226,7 @@ pub fn get_book_route_test_suite() -> Suite {
             Book(name: "Book 4", author: "Author"),
             Book(name: "Book 5", author: "Author"),
           ]
-          |> encode.encode_json(
-            serialize.encoder(serialize.list(book_serializer())),
-          )
+          |> serialize.encode_json(serialize.list(book_serializer()))
           |> json.to_string(),
         ),
       )
@@ -251,9 +248,7 @@ pub fn get_book_route_test_suite() -> Suite {
             Book(name: "Book 5", author: "Author"),
             Book(name: "Book 6", author: "Author"),
           ]
-          |> encode.encode_json(
-            serialize.encoder(serialize.list(book_serializer())),
-          )
+          |> serialize.encode_json(serialize.list(book_serializer()))
           |> json.to_string(),
         ),
       )
@@ -333,10 +328,7 @@ pub fn post_book_route_test_suite() -> Suite {
       let book = Book(name: "My book", author: "Myself")
       let response =
         simulate.browser_request(http.Post, "/book")
-        |> simulate.json_body(encode.encode_json(
-          book,
-          serialize.encoder(book_serializer()),
-        ))
+        |> simulate.json_body(serialize.encode_json(book, book_serializer()))
         |> backstage_core.from_wisp_request()
         |> spec.route()
 
@@ -345,7 +337,7 @@ pub fn post_book_route_test_suite() -> Suite {
         response.body,
         wisp.Text(
           book
-          |> encode.encode_json(serialize.encoder(book_serializer()))
+          |> serialize.encode_json(book_serializer())
           |> json.to_string(),
         ),
       )

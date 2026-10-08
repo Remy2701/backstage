@@ -3,6 +3,7 @@ import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/int
+import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/pair
@@ -11,6 +12,7 @@ import gleam/time/calendar
 import gleam/time/timestamp.{type Timestamp}
 import json_value.{type JsonValue}
 import openapi/openapi_type.{type OpenAPIType}
+import taffy/value.{type YamlValue as Yaml}
 
 /// An encoder for a specific type `t` that knows how to encode a value into a 
 /// dynamic spec and contains the openapi specification of that type.
@@ -473,8 +475,18 @@ pub fn decode(
   decode.run(value, serializer.decoder)
 }
 
-pub fn encode(value: t, serializer: Serializer(t)) -> spec.Spec {
+pub fn encode(value: t, of serializer: Serializer(t)) -> spec.Spec {
   serializer.encoder(value)
+}
+
+/// Directly encode a value using the given serializer to JSON.
+pub fn encode_json(a: a, of serializer: Serializer(a)) -> Json {
+  spec.to_json(encode(a, of: serializer))
+}
+
+/// Directly encode a value using the given serializer to JSON.
+pub fn encode_yaml(a: a, of serializer: Serializer(a)) -> Yaml {
+  spec.to_yaml(encode(a, of: serializer))
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
