@@ -29,6 +29,16 @@ pub opaque type OpenAPIScope {
   OpenAPIScope(doc: OpenAPI, method: http.Method, route: String)
 }
 
+pub fn create_spec_builder(
+  route route: String,
+  method method: http.Method,
+  doc builder: fn(OpenAPI) -> OpenAPI,
+) {
+  RouteSpecBuilder(path: route, method: method, doc: fn(doc) {
+    create_scope(doc: builder(doc), method: method, route: route)
+  })
+}
+
 /// Create a new OpenAPIScope using the given OpenAPI doc, http method and route path.
 pub fn create_scope(
   doc doc: OpenAPI,

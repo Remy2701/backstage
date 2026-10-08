@@ -901,6 +901,7 @@ pub type PathItem {
     put: Option(Operation),
     post: Option(Operation),
     delete: Option(Operation),
+    patch: Option(Operation),
   )
 }
 
@@ -913,6 +914,7 @@ fn create_path_item(path: String) -> PathItem {
     put: None,
     post: None,
     delete: None,
+    patch: None,
   )
 }
 
@@ -924,6 +926,7 @@ fn path_item_to_spec(path: PathItem) -> spec.Spec {
     #("put", spec.nullable(path.put, operation.to_spec)),
     #("post", spec.nullable(path.post, operation.to_spec)),
     #("delete", spec.nullable(path.delete, operation.to_spec)),
+    #("patch", spec.nullable(path.patch, operation.to_spec)),
   ])
 }
 
@@ -943,6 +946,16 @@ fn path_item_put(
 ) -> PathItem {
   PathItem(..path, put: case path.put {
     Some(put) -> Some(builder(put))
+    None -> Some(builder(create_operation()))
+  })
+}
+
+fn path_item_patch(
+  path: PathItem,
+  builder: fn(Operation) -> Operation,
+) -> PathItem {
+  PathItem(..path, patch: case path.patch {
+    Some(patch) -> Some(builder(patch))
     None -> Some(builder(create_operation()))
   })
 }
@@ -974,6 +987,7 @@ pub type PathItemNS {
     to_spec: fn(PathItem) -> spec.Spec,
     get: fn(PathItem, fn(Operation) -> Operation) -> PathItem,
     put: fn(PathItem, fn(Operation) -> Operation) -> PathItem,
+    patch: fn(PathItem, fn(Operation) -> Operation) -> PathItem,
     post: fn(PathItem, fn(Operation) -> Operation) -> PathItem,
     delete: fn(PathItem, fn(Operation) -> Operation) -> PathItem,
   )
@@ -983,6 +997,7 @@ pub const path: PathItemNS = PathItemNS(
   to_spec: path_item_to_spec,
   get: path_item_get,
   put: path_item_put,
+  patch: path_item_patch,
   post: path_item_post,
   delete: path_item_delete,
 )

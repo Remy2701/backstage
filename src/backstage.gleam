@@ -49,46 +49,65 @@ pub type OpenAPIScope =
 
 /// Create a GET route with the given [route] path.
 pub fn get(route: String) -> RouteSpecBuilder {
-  backstage_core.RouteSpecBuilder(path: route, method: http.Get, doc: fn(doc) {
-    backstage_core.create_scope(
-      doc: doc
-        |> openapi.on_path(route, fn(path) {
-          openapi.path.get(path, function.identity)
-        }),
-      method: http.Get,
-      route: route,
-    )
-  })
+  backstage_core.create_spec_builder(
+    route: route,
+    method: http.Get,
+    doc: fn(doc) {
+      openapi.on_path(doc, route, fn(path) {
+        openapi.path.get(path, function.identity)
+      })
+    },
+  )
 }
 
 /// Create a POST route with the given [route] path.
 pub fn post(route: String) -> RouteSpecBuilder {
-  backstage_core.RouteSpecBuilder(path: route, method: http.Get, doc: fn(doc) {
-    backstage_core.create_scope(
-      doc: doc
-        |> openapi.on_path(route, fn(path) {
-          openapi.path.post(path, function.identity)
-        }),
-      method: http.Post,
-      route: route,
-    )
-  })
+  backstage_core.create_spec_builder(
+    route: route,
+    method: http.Post,
+    doc: fn(doc) {
+      openapi.on_path(doc, route, fn(path) {
+        openapi.path.post(path, function.identity)
+      })
+    },
+  )
 }
 
 /// Create a DELETE route with the given [route] path.
 pub fn delete(route: String) -> RouteSpecBuilder {
-  backstage_core.RouteSpecBuilder(
-    path: route,
+  backstage_core.create_spec_builder(
+    route: route,
     method: http.Delete,
     doc: fn(doc) {
-      backstage_core.create_scope(
-        doc: doc
-          |> openapi.on_path(route, fn(path) {
-            openapi.path.delete(path, function.identity)
-          }),
-        method: http.Delete,
-        route: route,
-      )
+      openapi.on_path(doc, route, fn(path) {
+        openapi.path.delete(path, function.identity)
+      })
+    },
+  )
+}
+
+/// Create a PUT route with the given [route] path.
+pub fn put(route: String) -> RouteSpecBuilder {
+  backstage_core.create_spec_builder(
+    route: route,
+    method: http.Put,
+    doc: fn(doc) {
+      openapi.on_path(doc, route, fn(path) {
+        openapi.path.put(path, function.identity)
+      })
+    },
+  )
+}
+
+/// Create a PATCH route with the given [route] path.
+pub fn patch(route: String) -> RouteSpecBuilder {
+  backstage_core.create_spec_builder(
+    route: route,
+    method: http.Patch,
+    doc: fn(doc) {
+      openapi.on_path(doc, route, fn(path) {
+        openapi.path.patch(path, function.identity)
+      })
     },
   )
 }
