@@ -1,5 +1,5 @@
 name = "offstage"
-version = "0.6.0"
+version = "0.7.0"
 
 [dependencies]
 gleam_stdlib = ">= 1.0.0 and < 2.0.0"

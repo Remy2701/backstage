@@ -7,5 +7,5 @@ An (experimental) framework for creating api with openapi documentation built on
 
 ```toml
 [dependencies]
-offstage = ">= 0.6.0 and < 1.0.0"
+offstage = ">= 0.7.0 and < 1.0.0"
 ```
