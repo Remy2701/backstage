@@ -1,5 +1,3 @@
-import backstage/backstage_core
-import backstage/multipart
 import dynamic/serialize
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
@@ -7,6 +5,8 @@ import gleam/http
 import gleam/http/request
 import gleam/time/calendar
 import gleam/time/timestamp
+import offstage/multipart
+import offstage/offstage_core
 import wisp/simulate
 
 type Book {
@@ -39,10 +39,10 @@ pub fn multipart_body_suite() -> Suite {
             ),
           ],
         )
-        |> request.map(backstage_core.WispConnection)
+        |> request.map(offstage_core.WispConnection)
 
       let body =
-        backstage_core.get_multipart_body(
+        offstage_core.get_multipart_body(
           request,
           serialize.object(fn(context) {
             use context, author <- serialize.field(

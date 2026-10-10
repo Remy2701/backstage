@@ -1,12 +1,12 @@
-import backstage
-import backstage/backstage_core
-import backstage/pagination
 import dynamic/serialize
 import garanti.{type Suite, Suite, Test}
 import gleam/http
 import gleam/int
 import gleam/json
 import gleam/list
+import offstage
+import offstage/offstage_core
+import offstage/pagination
 import openapi/openapi
 import use_expect
 import wisp
@@ -17,24 +17,24 @@ import wisp/simulate
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
 type GetVersionContext {
-  GetVersionContext(json_response: backstage.JsonResponse(String))
+  GetVersionContext(json_response: offstage.JsonResponse(String))
 }
 
 pub fn get_version_route_test_suite() -> Suite {
   let spec = {
     let spec =
-      backstage.get("/version")
-      |> backstage.tag("Core")
-      |> backstage.summary("Get the version of the API")
+      offstage.get("/version")
+      |> offstage.tag("Core")
+      |> offstage.summary("Get the version of the API")
 
-    use spec, json_response <- backstage.json_response(
+    use spec, json_response <- offstage.json_response(
       spec,
       200,
       "Version number",
       serialize.encoder(serialize.string()),
     )
 
-    backstage.build(
+    offstage.build(
       spec,
       fn(request) {
         use json_response <- json_response.get(request)
@@ -49,7 +49,7 @@ pub fn get_version_route_test_suite() -> Suite {
     Test("generated openapi docs", fn() {
       let doc =
         spec
-        |> backstage.doc(openapi.openapi())
+        |> offstage.doc(openapi.openapi())
 
       use path <- use_expect.find(doc.paths, fn(path) {
         path.path == "/version"
@@ -76,7 +76,7 @@ pub fn get_version_route_test_suite() -> Suite {
     Test("http response", fn() {
       let response =
         simulate.browser_request(http.Get, "/version")
-        |> backstage_core.from_wisp_request()
+        |> offstage_core.from_wisp_request()
         |> spec.route()
 
       use <- use_expect.equal(response.status, 200)
@@ -119,30 +119,30 @@ fn book_serializer() -> serialize.Serializer(Book) {
 type GetBookContext {
   GetBookContext(
     pagination: pagination.Pagination,
-    json_response: backstage.JsonResponse(List(Book)),
+    json_response: offstage.JsonResponse(List(Book)),
   )
 }
 
 pub fn get_book_route_test_suite() -> Suite {
   let spec = {
     let spec =
-      backstage.get("/book")
-      |> backstage.tag("Book")
-      |> backstage.summary("Get the paginated list of books")
+      offstage.get("/book")
+      |> offstage.tag("Book")
+      |> offstage.summary("Get the paginated list of books")
 
-    use spec, pagination <- backstage.pagination(
+    use spec, pagination <- offstage.pagination(
       spec,
       pagination.simple() |> pagination.set_default_per_page(5),
     )
 
-    use spec, json_response <- backstage.json_response(
+    use spec, json_response <- offstage.json_response(
       spec,
       200,
       "Paginated list of books",
       serialize.encoder(serialize.list(book_serializer())),
     )
 
-    backstage.build(
+    offstage.build(
       spec,
       fn(request) {
         use json_response <- json_response.get(request)
@@ -178,7 +178,7 @@ pub fn get_book_route_test_suite() -> Suite {
     Test("generated openapi docs", fn() {
       let doc =
         spec
-        |> backstage.doc(openapi.openapi())
+        |> offstage.doc(openapi.openapi())
 
       use path <- use_expect.find(doc.paths, fn(path) { path.path == "/book" })
 
@@ -212,7 +212,7 @@ pub fn get_book_route_test_suite() -> Suite {
     Test("base http response", fn() {
       let response =
         simulate.browser_request(http.Get, "/book")
-        |> backstage_core.from_wisp_request()
+        |> offstage_core.from_wisp_request()
         |> spec.route()
 
       use <- use_expect.equal(response.status, 200)
@@ -236,7 +236,7 @@ pub fn get_book_route_test_suite() -> Suite {
     Test("http response with pagination", fn() {
       let response =
         simulate.browser_request(http.Get, "/book?page=2&per_page=3")
-        |> backstage_core.from_wisp_request()
+        |> offstage_core.from_wisp_request()
         |> spec.route()
 
       use <- use_expect.equal(response.status, 200)
@@ -263,29 +263,29 @@ pub fn get_book_route_test_suite() -> Suite {
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
 type PostBookContext {
-  PostBookContext(body: Book, json_response: backstage.JsonResponse(Book))
+  PostBookContext(body: Book, json_response: offstage.JsonResponse(Book))
 }
 
 pub fn post_book_route_test_suite() -> Suite {
   let spec = {
     let spec =
-      backstage.post("/book")
-      |> backstage.tag("Book")
-      |> backstage.summary("Create a new book")
+      offstage.post("/book")
+      |> offstage.tag("Book")
+      |> offstage.summary("Create a new book")
 
-    use spec, body <- backstage.json_body(
+    use spec, body <- offstage.json_body(
       spec,
       serialize.decoder(book_serializer()),
     )
 
-    use spec, json_response <- backstage.json_response(
+    use spec, json_response <- offstage.json_response(
       spec,
       200,
       "Paginated list of books",
       serialize.encoder(book_serializer()),
     )
 
-    backstage.build(
+    offstage.build(
       spec,
       fn(request) {
         use json_response <- json_response.get(request)
@@ -301,7 +301,7 @@ pub fn post_book_route_test_suite() -> Suite {
     Test("generated openapi docs", fn() {
       let doc =
         spec
-        |> backstage.doc(openapi.openapi())
+        |> offstage.doc(openapi.openapi())
 
       use path <- use_expect.find(doc.paths, fn(path) { path.path == "/book" })
 
@@ -329,7 +329,7 @@ pub fn post_book_route_test_suite() -> Suite {
       let response =
         simulate.browser_request(http.Post, "/book")
         |> simulate.json_body(serialize.encode_json(book, book_serializer()))
-        |> backstage_core.from_wisp_request()
+        |> offstage_core.from_wisp_request()
         |> spec.route()
 
       use <- use_expect.equal(response.status, 200)

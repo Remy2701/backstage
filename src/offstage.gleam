@@ -1,5 +1,3 @@
-import backstage/backstage_core
-import backstage/pagination
 import dynamic/decode
 import dynamic/encode
 import dynamic/serialize
@@ -16,32 +14,34 @@ import gleam/pair
 import gleam/result
 import gleam/string
 import gleam/uri
+import offstage/offstage_core
+import offstage/pagination
 import openapi/openapi
 import openapi/openapi_type
 import wisp
 
 /// The common request type that supports both Wisp and Mist.
 pub type Request =
-  backstage_core.Request
+  offstage_core.Request
 
 /// The response type for Mist.
 pub type MistResponse =
-  backstage_core.MistResponse
+  offstage_core.MistResponse
 
 /// The response type for Wisp.
 pub type WispResponse =
-  backstage_core.WispResponse
+  offstage_core.WispResponse
 
 /// Attempt to execute the given function with the value inside the `Result`. This function is 
 /// similar to the result.try function, returning the
-pub const try = backstage_core.try
+pub const try = offstage_core.try
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                             Scope                                             //
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
 pub type OpenAPIScope =
-  backstage_core.OpenAPIScope
+  offstage_core.OpenAPIScope
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                          Route Base                                           //
@@ -49,7 +49,7 @@ pub type OpenAPIScope =
 
 /// Create a GET route with the given [route] path.
 pub fn get(route: String) -> RouteSpecBuilder {
-  backstage_core.create_spec_builder(
+  offstage_core.create_spec_builder(
     route: route,
     method: http.Get,
     doc: fn(doc) {
@@ -62,7 +62,7 @@ pub fn get(route: String) -> RouteSpecBuilder {
 
 /// Create a POST route with the given [route] path.
 pub fn post(route: String) -> RouteSpecBuilder {
-  backstage_core.create_spec_builder(
+  offstage_core.create_spec_builder(
     route: route,
     method: http.Post,
     doc: fn(doc) {
@@ -75,7 +75,7 @@ pub fn post(route: String) -> RouteSpecBuilder {
 
 /// Create a DELETE route with the given [route] path.
 pub fn delete(route: String) -> RouteSpecBuilder {
-  backstage_core.create_spec_builder(
+  offstage_core.create_spec_builder(
     route: route,
     method: http.Delete,
     doc: fn(doc) {
@@ -88,7 +88,7 @@ pub fn delete(route: String) -> RouteSpecBuilder {
 
 /// Create a PUT route with the given [route] path.
 pub fn put(route: String) -> RouteSpecBuilder {
-  backstage_core.create_spec_builder(
+  offstage_core.create_spec_builder(
     route: route,
     method: http.Put,
     doc: fn(doc) {
@@ -101,7 +101,7 @@ pub fn put(route: String) -> RouteSpecBuilder {
 
 /// Create a PATCH route with the given [route] path.
 pub fn patch(route: String) -> RouteSpecBuilder {
-  backstage_core.create_spec_builder(
+  offstage_core.create_spec_builder(
     route: route,
     method: http.Patch,
     doc: fn(doc) {
@@ -118,8 +118,8 @@ pub fn patch(route: String) -> RouteSpecBuilder {
 
 /// Set the [summary] of the route.
 pub fn summary(spec: RouteSpecBuilder, summary: String) -> RouteSpecBuilder {
-  use doc <- backstage_core.modify_spec(spec)
-  use operation <- backstage_core.modify_operation(doc)
+  use doc <- offstage_core.modify_spec(spec)
+  use operation <- offstage_core.modify_operation(doc)
 
   openapi.operation.summary(operation, summary)
 }
@@ -129,16 +129,16 @@ pub fn description(
   spec: RouteSpecBuilder,
   description: String,
 ) -> RouteSpecBuilder {
-  use doc <- backstage_core.modify_spec(spec)
-  use operation <- backstage_core.modify_operation(doc)
+  use doc <- offstage_core.modify_spec(spec)
+  use operation <- offstage_core.modify_operation(doc)
 
   openapi.operation.description(operation, description)
 }
 
 /// Set the [tag] of the route.
 pub fn tag(spec: RouteSpecBuilder, tag: String) -> RouteSpecBuilder {
-  use doc <- backstage_core.modify_spec(spec)
-  use operation <- backstage_core.modify_operation(doc)
+  use doc <- offstage_core.modify_spec(spec)
+  use operation <- offstage_core.modify_operation(doc)
 
   openapi.operation.tag(operation, tag)
 }
@@ -148,19 +148,19 @@ pub fn tag(spec: RouteSpecBuilder, tag: String) -> RouteSpecBuilder {
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
 pub type RouteSpecBuilder =
-  backstage_core.RouteSpecBuilder
+  offstage_core.RouteSpecBuilder
 
 pub type RouteSpec =
-  backstage_core.RouteSpec
+  offstage_core.RouteSpec
 
 pub type RouteCapability(data, object) =
-  backstage_core.RouteCapability(data, object)
+  offstage_core.RouteCapability(data, object)
 
 /// Get the OpenAPI document from the given route definition
 pub fn doc(spec: RouteSpec, openapi: openapi.OpenAPI) -> openapi.OpenAPI {
   openapi
   |> spec.doc()
-  |> backstage_core.openapi_scope_doc()
+  |> offstage_core.openapi_scope_doc()
 }
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
@@ -177,7 +177,7 @@ pub fn require_authorization(
   req: Request,
   unauthorized: UnauthorizedResponse,
 ) -> Result(String, WispResponse) {
-  backstage_core.get_authorization(req)
+  offstage_core.get_authorization(req)
   |> result.map_error(fn(_) {
     unauthorized.apply("Missing authorization header")
   })
@@ -191,10 +191,10 @@ pub fn bearer_auth(
 ) -> RouteSpec {
   use spec, unauthorized <- unauthorized(spec)
 
-  backstage_core.modify_spec(spec, fn(scope) {
+  offstage_core.modify_spec(spec, fn(scope) {
     scope
-    |> backstage_core.modify_operation(openapi.operation.security(_, name))
-    |> backstage_core.modify_doc(fn(doc) {
+    |> offstage_core.modify_operation(openapi.operation.security(_, name))
+    |> offstage_core.modify_doc(fn(doc) {
       use security <- openapi.components.security_scheme(doc, name, "http")
 
       security
@@ -203,7 +203,7 @@ pub fn bearer_auth(
     })
   })
   |> next(
-    backstage_core.capability(fn(request) {
+    offstage_core.capability(fn(request) {
       use unauthorized <- unauthorized.get(request)
       use token <- result.try(require_authorization(request, unauthorized))
       Ok(BearerAuth(token: token))
@@ -222,16 +222,16 @@ pub fn json_body(
   next: fn(RouteSpecBuilder, RouteCapability(body, object)) -> RouteSpec,
 ) -> RouteSpec {
   spec
-  |> backstage_core.modify_spec(fn(scope) {
-    use operation <- backstage_core.modify_operation(scope)
+  |> offstage_core.modify_spec(fn(scope) {
+    use operation <- offstage_core.modify_operation(scope)
     use request_body <- openapi.operation.request_body(operation)
     use media <- openapi.request_body.content(request_body, "application/json")
 
     openapi.media_type.set_schema(media, openapi_type.to_schema(decoder.doc()))
   })
   |> next(
-    backstage_core.capability(fn(request) {
-      backstage_core.get_json_body(request, decoder.decoder)
+    offstage_core.capability(fn(request) {
+      offstage_core.get_json_body(request, decoder.decoder)
     }),
   )
 }
@@ -243,8 +243,8 @@ pub fn multipart_body(
   next: fn(RouteSpecBuilder, RouteCapability(body, object)) -> RouteSpec,
 ) -> RouteSpec {
   spec
-  |> backstage_core.modify_spec(fn(scope) {
-    use operation <- backstage_core.modify_operation(scope)
+  |> offstage_core.modify_spec(fn(scope) {
+    use operation <- offstage_core.modify_operation(scope)
     use request_body <- openapi.operation.request_body(operation)
     use media <- openapi.request_body.content(
       request_body,
@@ -254,8 +254,8 @@ pub fn multipart_body(
     openapi.media_type.set_schema(media, openapi_type.to_schema(decoder.doc()))
   })
   |> next(
-    backstage_core.capability(fn(request) {
-      backstage_core.get_multipart_body(request, decoder.decoder)
+    offstage_core.capability(fn(request) {
+      offstage_core.get_multipart_body(request, decoder.decoder)
     }),
   )
 }
@@ -280,7 +280,7 @@ pub fn json_response(
   next: fn(RouteSpecBuilder, RouteCapability(JsonResponse(response), object)) ->
     RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
     code,
     encoder,
@@ -302,12 +302,12 @@ pub fn bad_request(
   next: fn(RouteSpecBuilder, RouteCapability(BadRequestResponse, object)) ->
     RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
-    backstage_core.status_code.bad_request,
-    backstage_core.error_response_serializer(option.Some("bad_request"))
+    offstage_core.status_code.bad_request,
+    offstage_core.error_response_serializer(option.Some("bad_request"))
       |> serialize.encoder()
-      |> encode.map(backstage_core.ErrorResponse(
+      |> encode.map(offstage_core.ErrorResponse(
         status: "bad_request",
         reason: _,
       )),
@@ -329,12 +329,12 @@ pub fn unauthorized(
   next: fn(RouteSpecBuilder, RouteCapability(UnauthorizedResponse, object)) ->
     RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
-    backstage_core.status_code.unauthorized,
-    backstage_core.error_response_serializer(option.Some("unauthorized"))
+    offstage_core.status_code.unauthorized,
+    offstage_core.error_response_serializer(option.Some("unauthorized"))
       |> serialize.encoder()
-      |> encode.map(backstage_core.ErrorResponse(
+      |> encode.map(offstage_core.ErrorResponse(
         status: "unauthorized",
         reason: _,
       )),
@@ -356,12 +356,12 @@ pub fn not_found(
   next: fn(RouteSpecBuilder, RouteCapability(NotFoundResponse, object)) ->
     RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
-    backstage_core.status_code.not_found,
-    backstage_core.error_response_serializer(option.Some("not_found"))
+    offstage_core.status_code.not_found,
+    offstage_core.error_response_serializer(option.Some("not_found"))
       |> serialize.encoder()
-      |> encode.map(backstage_core.ErrorResponse(status: "not_found", reason: _)),
+      |> encode.map(offstage_core.ErrorResponse(status: "not_found", reason: _)),
     "Not found",
     NotFoundResponse,
     next,
@@ -380,12 +380,12 @@ pub fn conflict(
   next: fn(RouteSpecBuilder, RouteCapability(ConflictResponse, object)) ->
     RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
-    backstage_core.status_code.conflict,
-    backstage_core.error_response_serializer(option.Some("conflict"))
+    offstage_core.status_code.conflict,
+    offstage_core.error_response_serializer(option.Some("conflict"))
       |> serialize.encoder()
-      |> encode.map(backstage_core.ErrorResponse(status: "conflict", reason: _)),
+      |> encode.map(offstage_core.ErrorResponse(status: "conflict", reason: _)),
     "Conflict",
     ConflictResponse,
     next,
@@ -406,14 +406,12 @@ pub fn internal_server_error(
     RouteCapability(InternalServerErrorResponse, object),
   ) -> RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
-    backstage_core.status_code.internal_server_error,
-    backstage_core.error_response_serializer(option.Some(
-      "internal_server_error",
-    ))
+    offstage_core.status_code.internal_server_error,
+    offstage_core.error_response_serializer(option.Some("internal_server_error"))
       |> serialize.encoder()
-      |> encode.map(backstage_core.ErrorResponse(
+      |> encode.map(offstage_core.ErrorResponse(
         status: "internal_server_error",
         reason: _,
       )),
@@ -437,12 +435,12 @@ pub fn service_unavailable(
     RouteCapability(ServiceUnavailableResponse, object),
   ) -> RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
-    backstage_core.status_code.service_unavailable,
-    backstage_core.error_response_serializer(option.Some("service_unavailable"))
+    offstage_core.status_code.service_unavailable,
+    offstage_core.error_response_serializer(option.Some("service_unavailable"))
       |> serialize.encoder()
-      |> encode.map(backstage_core.ErrorResponse(
+      |> encode.map(offstage_core.ErrorResponse(
         status: "service_unavailable",
         reason: _,
       )),
@@ -464,12 +462,12 @@ pub fn timeout(
   next: fn(RouteSpecBuilder, RouteCapability(TimeoutResponse, object)) ->
     RouteSpec,
 ) -> RouteSpec {
-  backstage_core.json_response_internal(
+  offstage_core.json_response_internal(
     spec,
-    backstage_core.status_code.timeout,
-    backstage_core.error_response_serializer(option.Some("timeout"))
+    offstage_core.status_code.timeout,
+    offstage_core.error_response_serializer(option.Some("timeout"))
       |> serialize.encoder()
-      |> encode.map(backstage_core.ErrorResponse(status: "timeout", reason: _)),
+      |> encode.map(offstage_core.ErrorResponse(status: "timeout", reason: _)),
     "Timeout",
     TimeoutResponse,
     next,
@@ -490,8 +488,8 @@ fn path_parameter_internal(
   use spec, bad_request <- bad_request(spec)
 
   spec
-  |> backstage_core.modify_spec(fn(scope) {
-    use operation <- backstage_core.modify_operation(scope)
+  |> offstage_core.modify_spec(fn(scope) {
+    use operation <- offstage_core.modify_operation(scope)
     use parameter <- openapi.operation.parameter(
       operation,
       name,
@@ -503,13 +501,13 @@ fn path_parameter_internal(
     |> openapi.parameter.set_schema(openapi_type.to_schema(decoder.doc()))
   })
   |> next(
-    backstage_core.RouteCapability(fn(request, next) {
+    offstage_core.RouteCapability(fn(request, next) {
       use bad_request <- bad_request.get(request)
 
       let path_segments =
         openapi.openapi()
         |> spec.doc()
-        |> backstage_core.openapi_scope_path()
+        |> offstage_core.openapi_scope_path()
         |> uri.path_segments()
         |> list.index_map(pair.new)
 
@@ -580,8 +578,8 @@ fn query_parameter_internal(
   use spec, bad_request <- bad_request(spec)
 
   spec
-  |> backstage_core.modify_spec(fn(scope) {
-    use operation <- backstage_core.modify_operation(scope)
+  |> offstage_core.modify_spec(fn(scope) {
+    use operation <- offstage_core.modify_operation(scope)
     use parameter <- openapi.operation.parameter(
       operation,
       name,
@@ -593,7 +591,7 @@ fn query_parameter_internal(
     |> openapi.parameter.set_schema(openapi_type.to_schema(serializer.doc()))
   })
   |> next(
-    backstage_core.RouteCapability(fn(request, next) {
+    offstage_core.RouteCapability(fn(request, next) {
       use bad_request <- bad_request.get(request)
 
       use data <- result.try(
@@ -648,12 +646,12 @@ pub fn json_query_parameter(
 
 pub fn pagination(
   spec: RouteSpecBuilder,
-  config: pagination.PaginationConfig(a, b, backstage_core.Connection),
+  config: pagination.PaginationConfig(a, b, offstage_core.Connection),
   next: fn(RouteSpecBuilder, RouteCapability(a, object)) -> RouteSpec,
 ) -> RouteSpec {
   spec
-  |> backstage_core.modify_spec(fn(scope) {
-    use operation <- backstage_core.modify_operation(scope)
+  |> offstage_core.modify_spec(fn(scope) {
+    use operation <- offstage_core.modify_operation(scope)
     case config {
       pagination.SimplePaginationConfig(
         default_page:,
@@ -768,7 +766,7 @@ pub fn pagination(
     }
   })
   |> next(
-    backstage_core.capability(fn(request) {
+    offstage_core.capability(fn(request) {
       Ok(pagination.parse(config, request))
     }),
   )
@@ -807,7 +805,7 @@ pub fn build(
   builder: fn(Request) -> Result(object, WispResponse),
   route: fn(Request, object) -> WispResponse,
 ) -> RouteSpec {
-  backstage_core.RouteSpec(
+  offstage_core.RouteSpec(
     doc: spec.doc,
     path: spec.path,
     method: spec.method,
@@ -825,13 +823,13 @@ pub fn router(
   request: Request,
 ) -> WispResponse {
   let specs = [
-    backstage_core.RouteSpec(
+    offstage_core.RouteSpec(
       path: "/openapi",
       method: http.Get,
-      doc: fn(doc) { backstage_core.create_scope(doc, http.Get, "/openapi") },
+      doc: fn(doc) { offstage_core.create_scope(doc, http.Get, "/openapi") },
       route: fn(_) {
-        backstage_core.ok()
-        |> backstage_core.json_body(
+        offstage_core.ok()
+        |> offstage_core.json_body(
           openapi
           |> list.fold(specs, _, fn(openapi, spec) { doc(spec, openapi) })
           |> openapi.to_spec()
@@ -853,7 +851,7 @@ pub fn router(
     })
 
   case matched_routes {
-    [] -> backstage_core.not_found("Route not found!")
+    [] -> offstage_core.not_found("Route not found!")
     _ ->
       list.find(matched_routes, fn(spec) { spec.method == request.method })
       |> result.map(fn(spec) { spec.route(request) })

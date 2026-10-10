@@ -1,4 +1,4 @@
-name = "backstage"
+name = "offstage"
 version = "0.6.0"
 
 [dependencies]

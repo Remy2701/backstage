@@ -1,10 +1,10 @@
-import backstage/pagination
 import dynamic/serialize
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
 import gleam/http
 import gleam/time/calendar
 import gleam/time/timestamp
+import offstage/pagination
 import wisp/simulate
 
 pub fn simple_pagination_suite() -> Suite {
