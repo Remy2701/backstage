@@ -1,10 +1,10 @@
-import dynamic/serialize
 import gleam/dynamic
 import gleam/http/request.{type Request}
 import gleam/int
 import gleam/json
 import gleam/list
 import gleam/result
+import offstage/dynamic/serialize
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 //                                          Pagination                                           //

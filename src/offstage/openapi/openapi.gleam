@@ -1,9 +1,9 @@
-import dynamic/spec
 import gleam/function
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/uri.{type Uri}
+import offstage/dynamic/spec
 
 fn uri_to_spec(uri: Uri) -> spec.Spec {
   spec.string(uri.to_string(uri))

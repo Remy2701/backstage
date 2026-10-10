@@ -1,9 +1,9 @@
-import dynamic/serialize
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
 import gleam/http
 import gleam/time/calendar
 import gleam/time/timestamp
+import offstage/dynamic/serialize
 import offstage/pagination
 import wisp/simulate
 

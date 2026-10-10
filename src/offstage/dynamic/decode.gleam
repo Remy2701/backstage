@@ -1,6 +1,6 @@
-import dynamic/serialize
 import gleam/dynamic
 import gleam/dynamic/decode
+import offstage/dynamic/serialize
 
 /// The error type returned when decoding fails.
 pub type DecodeError =

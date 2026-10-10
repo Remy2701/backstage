@@ -1,13 +1,13 @@
-import dynamic/serialize
 import garanti.{type Suite, Suite, Test}
 import gleam/http
 import gleam/int
 import gleam/json
 import gleam/list
 import offstage
+import offstage/dynamic/serialize
 import offstage/offstage_core
+import offstage/openapi/openapi
 import offstage/pagination
-import openapi/openapi
 import use_expect
 import wisp
 import wisp/simulate

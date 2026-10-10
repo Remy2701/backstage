@@ -1,7 +1,7 @@
-import dynamic/spec.{type Spec}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import openapi/openapi
+import offstage/dynamic/spec.{type Spec}
+import offstage/openapi/openapi
 
 /// A type representing the various OpenAPI data types and their associated metadata.
 pub type OpenAPIType {

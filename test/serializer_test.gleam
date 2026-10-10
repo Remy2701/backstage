@@ -1,5 +1,3 @@
-import dynamic/serialize
-import dynamic/spec
 import garanti.{type Suite, Suite, Test}
 import garanti/expect
 import gleam/dynamic
@@ -8,7 +6,9 @@ import gleam/option
 import gleam/pair
 import gleam/result
 import gleam/time/timestamp
-import openapi/openapi_type
+import offstage/dynamic/serialize
+import offstage/dynamic/spec
+import offstage/openapi/openapi_type
 
 fn serializer_suite_of_with_dynamic(
   name: String,

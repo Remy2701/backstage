@@ -1,6 +1,6 @@
-import dynamic/serialize
-import dynamic/spec.{type Spec}
 import gleam/json.{type Json}
+import offstage/dynamic/serialize
+import offstage/dynamic/spec.{type Spec}
 import taffy/value.{type YamlValue as Yaml}
 
 /// An encoder for a specific type 't' that knows how to convert it to a 

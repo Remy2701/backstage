@@ -1,11 +1,11 @@
-import dynamic/serialize
-import dynamic/spec
 import file_streams/file_stream
 import gleam/dynamic/decode
 import gleam/json
 import gleam/list
 import gleam/result
-import openapi/openapi_type
+import offstage/dynamic/serialize
+import offstage/dynamic/spec
+import offstage/openapi/openapi_type
 import wisp
 
 pub fn json_string_of(

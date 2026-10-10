@@ -1,4 +1,3 @@
-import dynamic/spec.{type Spec}
 import gleam/dict
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -11,7 +10,8 @@ import gleam/result
 import gleam/time/calendar
 import gleam/time/timestamp.{type Timestamp}
 import json_value.{type JsonValue}
-import openapi/openapi_type.{type OpenAPIType}
+import offstage/dynamic/spec.{type Spec}
+import offstage/openapi/openapi_type.{type OpenAPIType}
 import taffy/value.{type YamlValue as Yaml}
 
 /// An encoder for a specific type `t` that knows how to encode a value into a 

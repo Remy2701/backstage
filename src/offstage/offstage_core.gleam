@@ -1,6 +1,3 @@
-import dynamic/encode
-import dynamic/serialize
-import dynamic/spec
 import gleam/bit_array
 import gleam/bool
 import gleam/dict
@@ -17,8 +14,11 @@ import gleam/pair
 import gleam/result
 import gleam/string
 import mist
-import openapi/openapi.{type OpenAPI}
-import openapi/openapi_type
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage/dynamic/spec
+import offstage/openapi/openapi.{type OpenAPI}
+import offstage/openapi/openapi_type
 import wisp
 
 // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //

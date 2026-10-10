@@ -1,7 +1,3 @@
-import dynamic/decode
-import dynamic/encode
-import dynamic/serialize
-import dynamic/spec
 import gleam/bool
 import gleam/dynamic
 import gleam/function
@@ -14,10 +10,14 @@ import gleam/pair
 import gleam/result
 import gleam/string
 import gleam/uri
+import offstage/dynamic/decode
+import offstage/dynamic/encode
+import offstage/dynamic/serialize
+import offstage/dynamic/spec
 import offstage/offstage_core
+import offstage/openapi/openapi
+import offstage/openapi/openapi_type
 import offstage/pagination
-import openapi/openapi
-import openapi/openapi_type
 import wisp
 
 /// The common request type that supports both Wisp and Mist.
