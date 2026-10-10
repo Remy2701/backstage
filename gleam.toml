@@ -1,6 +1,10 @@
 name = "offstage"
 version = "0.7.0"
 
+description = "A framework to create documented APIs"
+licences = ["Apache-2.0"]
+repository = { type = "github", user = "Remy2701", repo = "offstage" }
+
 [dependencies]
 gleam_stdlib = ">= 1.0.0 and < 2.0.0"
 mist = ">= 6.0.3 and < 7.0.0"
